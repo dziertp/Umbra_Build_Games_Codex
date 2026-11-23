@@ -23,7 +23,7 @@
     huntRetry: [15, 25],  // si la tirada falla, vuelve a intentar antes
     warn: [2, 3],
     huntLength: [20, 30],
-    huntSpeed: [62, 72],  // caminar 72, correr 102 (con stamina): agotarse es peligroso, no mortal
+    huntSpeed: [85, 95],  // más rápida que caminar (72), más lenta que correr (102): hay que cortar camino y esconderse
     sight: 320,           // alcance de la vista de la entidad
     catchDist: 14,
     replan: 0.35,         // s entre recálculos de ruta al perseguir
