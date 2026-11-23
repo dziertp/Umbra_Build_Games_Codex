@@ -56,6 +56,7 @@
       if (evidence && !tools.reading) {
         tools.reading = Umbra.data.evidence.find(item => item.id === evidence)?.name || 'Evidencia detectada';
       }
+      if (evidence) Umbra.emit('evidence:found', { id: evidence });
       return true;
     },
     drawUI(ctx, state) {
