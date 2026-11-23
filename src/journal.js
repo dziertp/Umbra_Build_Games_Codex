@@ -354,7 +354,7 @@
   }
 
   function drawEntities(ctx, j) {
-    pageTitle(ctx, LEFT, TABS[0][0] + TABS[0].slice(1).toLowerCase());
+    pageTitle(ctx, LEFT, 'Expediente N.º 23');
     entityGrid(ctx, j, LEFT, LEFT.y + 26, 15, true, { focusIndex: 0 });
     const e = data().entities[j.entitySel];
     if (!e) return;

@@ -214,6 +214,7 @@
     ctx.fillText('en el diario y termina en el camión del campamento.', VIEW_W / 2, 132);
     ctx.fillStyle = C.fuse;
     ctx.fillText('Enter o clic para comenzar la partida', VIEW_W / 2, 180);
+    ctx.save(); ctx.font = '8px monospace'; ctx.fillStyle = '#5a6470'; ctx.fillText('Hecho en vivo con Codex', VIEW_W / 2, VIEW_H - 6); ctx.restore();
     // Los ojos en la oscuridad.
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(VIEW_W / 2 - 9, 147, 6, 2);

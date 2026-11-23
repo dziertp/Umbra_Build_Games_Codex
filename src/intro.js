@@ -151,6 +151,35 @@
     ctx.restore();
   }
 
+  function newspaperNear(state) {
+    if (state.floor !== 0 || state.scene !== 'play') return null;
+    const p = state.player;
+    for (const d of state.G.floors[0].decor || []) {
+      if (d[0] !== 'newspaper') continue;
+      const dx = Math.max(d[1] - p.x, 0, p.x - (d[1] + d[3]));
+      const dy = Math.max(d[2] - p.y, 0, p.y - (d[2] + d[4]));
+      if (Math.hypot(dx, dy) < 18) return d;
+    }
+    return null;
+  }
+
+  function drawReadPrompt(ctx, state) {
+    if (!newspaperNear(state) || (state.journal && state.journal.open)) return;
+    const { ox, oy } = state.view;
+    ctx.save();
+    ctx.font = '8px monospace';
+    const label = 'E · Leer';
+    const tw = Math.ceil(ctx.measureText(label).width) + 6;
+    const px = Math.round(state.player.x + ox - tw / 2);
+    const py = Math.round(state.player.y + oy) - 26;
+    ctx.fillStyle = 'rgba(7,9,12,0.8)';
+    ctx.fillRect(px, py, tw, 11);
+    ctx.fillStyle = '#e1b66e';
+    ctx.textAlign = 'left';
+    ctx.fillText(label, px + 3, py + 8);
+    ctx.restore();
+  }
+
   function equipped(state) {
     const tl = state.tools;
     return tl && tl.slots && tl.selected >= 0 ? tl.slots[tl.selected] : null;
@@ -194,6 +223,11 @@
       tips.t = 0;
     },
     onKey(e, state) {
+      // Diario viejo del living: E · Leer.
+      if (!state.paused && e.code === 'KeyE' && newspaperNear(state) && !(state.journal && state.journal.open)) {
+        if (!e.repeat) Umbra.tell('«31 MINUTOS: noticia exclusiva desde la Mansión Umbra»', 4);
+        return true;
+      }
       // Completo italiano: F le da un mordisco.
       if (!state.paused && e.code === 'KeyF' && !e.repeat) {
         const held = equipped(state);
@@ -247,6 +281,7 @@
     drawUI(ctx, state) {
       drawTip(ctx, state);
       drawHint(ctx, state);
+      drawReadPrompt(ctx, state);
     },
     drawOverlay(ctx, state) {
       if (state.paused) drawObjective(ctx, state);

@@ -422,8 +422,25 @@
     }
   }
 
+  // ---------- Fuente de píxeles 3×5 (carteles, titulares) ----------
+  const GLYPHS = {
+    0: '111101101101111', 1: '010110010010111', 2: '111001111100111', 3: '111001111001111',
+    M: '101111111101101', I: '111010010010111', N: '111101101101101', U: '101101101101111',
+    T: '111010010010010', O: '111101101101111', S: '111100111001111', C: '111100100100111',
+    D: '110101101101110', E: '111100111100111', X: '101101010101101',
+  };
+  function pixText(g, str, x, y, color) {
+    g.fillStyle = color;
+    let cx = Math.round(x);
+    for (const ch of String(str).toUpperCase()) {
+      const gl = GLYPHS[ch];
+      if (gl) for (let k = 0; k < 15; k++) if (gl[k] === '1') g.fillRect(cx + (k % 3), Math.round(y) + Math.floor(k / 3), 1, 1);
+      cx += 4;
+    }
+  }
+
   // ---------- Decoración sin colisión (D.decor: [tipo, x, y, ancho, alto]) ----------
-  const FLOOR_DECOR = new Set(['runner', 'stain', 'papers', 'books', 'plant', 'lawnedge', 'planter', 'bench', 'mailbox', 'crate', 'cone', 'cable', 'tripod']);
+  const FLOOR_DECOR = new Set(['runner', 'stain', 'papers', 'books', 'plant', 'lawnedge', 'planter', 'bench', 'mailbox', 'crate', 'cone', 'cable', 'tripod', 'newspaper']);
 
   function decor(g, d, rooms) {
     const [type, x, y, w, h] = d;
@@ -447,10 +464,27 @@
       g.fillStyle = C.edge; g.fillRect(x + 1, y + Math.floor(h / 2), w - 2, 1);
       return;
     } else if (type === 'mailbox') {
-      g.fillStyle = C.pole; g.fillRect(x + 3, y + h, 2, 4);
-      g.fillStyle = C.edge; g.fillRect(x, y, w, h);
-      g.fillStyle = '#3a4a5a'; g.fillRect(x + 1, y + 1, w - 2, h - 2);
-      g.fillStyle = '#b8473a'; g.fillRect(x + w - 2, y - 2, 1, 3);
+      g.fillStyle = C.pole; g.fillRect(x + 4, y + h, 2, 4);
+      g.fillStyle = C.edge; g.fillRect(x - 1, y - 1, w + 2, h + 2);
+      g.fillStyle = '#3a4a5a'; g.fillRect(x, y, w, h);
+      g.fillStyle = '#b8473a'; g.fillRect(x + w, y - 3, 1, 3);
+      pixText(g, '23', x + 1, y + Math.floor((h - 5) / 2), '#f2efe6'); // número 23
+      return;
+    } else if (type === 'newspaper') {
+      // Diario viejo con titular legible.
+      g.fillStyle = C.shadow; g.fillRect(x + 1, y + 1, w, h);
+      g.fillStyle = '#8f887a'; g.fillRect(x, y, w, h);
+      g.fillStyle = '#a8a090'; g.fillRect(x + 1, y + 1, w - 2, h - 2);
+      pixText(g, d[5] || '', x + 3, y + 3, '#1a1816');
+      g.fillStyle = '#6a6658';
+      for (let ly = y + 11; ly < y + h - 2; ly += 3) { g.fillRect(x + 3, ly, Math.floor(w / 2) - 4, 1); g.fillRect(x + Math.floor(w / 2) + 1, ly, Math.floor(w / 2) - 4, 1); }
+      return;
+    } else if (type === 'sign') {
+      // Cuadro con letras claras.
+      g.fillStyle = C.edge; g.fillRect(x - 1, y - 1, w + 2, h + 2);
+      g.fillStyle = C.frame; g.fillRect(x, y, w, h);
+      g.fillStyle = '#1a1c20'; g.fillRect(x + 1, y + 1, w - 2, h - 2);
+      pixText(g, d[5] || '', x + Math.floor((w - (String(d[5]).length * 4 - 1)) / 2), y + Math.floor((h - 5) / 2), '#e8e3d8');
       return;
     } else if (type === 'crate') {
       g.fillStyle = C.shadow; g.fillRect(x + 1, y + 1, w, h);
