@@ -22,6 +22,8 @@
   ];
 
   let introStart = performance.now();
+  // Objetivos cumplidos (se leen de Umbra.investigation.objectives, de ui.js; no se modifican).
+  const goals = { done: new Set(), queue: [], current: null, since: 0 };
   const BITES = ['Ñam.', 'Le falta mayo.', 'La entidad te mira con envidia.'];
   let bite = 0;
   const tips = { queue: [], current: null, shown: new Set(), t: 0, since: 0 };
@@ -180,6 +182,30 @@
     ctx.restore();
   }
 
+  // Notificación de objetivo cumplido: abajo a la derecha, sobre el cartel de la habitación.
+  function drawGoal(ctx, state) {
+    if (!goals.current || state.scene !== 'play') return;
+    const { w, h } = state.view;
+    const label = goals.current.replace('✔ Objetivo cumplido: ', '');
+    ctx.save();
+    ctx.font = '8px monospace';
+    const tw = Math.min(172, Math.max(110, Math.ceil(ctx.measureText(label).width) + 12)); // no llega a la barra de inventario
+    const x = w - tw - 6;
+    const y = h - 70;
+    ctx.fillStyle = '#3a6049';
+    ctx.fillRect(x - 1, y - 1, tw + 2, 25);
+    ctx.fillStyle = '#0b100d';
+    ctx.fillRect(x, y, tw, 23);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#a6d98a';
+    ctx.font = 'bold 8px monospace';
+    ctx.fillText('✔ Objetivo cumplido', x + 6, y + 9, tw - 10);
+    ctx.fillStyle = '#d8d2c4';
+    ctx.font = '8px monospace';
+    ctx.fillText(label, x + 6, y + 19, tw - 10);
+    ctx.restore();
+  }
+
   function equipped(state) {
     const tl = state.tools;
     return tl && tl.slots && tl.selected >= 0 ? tl.slots[tl.selected] : null;
@@ -233,6 +259,9 @@
       tips.current = null;
       tips.shown.clear();
       tips.t = 0;
+      goals.done.clear();
+      goals.queue.length = 0;
+      goals.current = null;
     },
     onKey(e, state) {
       // Diario viejo del living: E · Leer.
@@ -281,7 +310,21 @@
       }
       if (state.stamina && state.stamina.value < 0.3) tip('stamina', 'Correr te cansa. Camina para recuperarte.');
       // Cuando falta exactamente un objetivo.
-      const objs = Umbra.investigation && Umbra.investigation.objectives ? Umbra.investigation.objectives(state) : [];
+      let objs = [];
+      try { objs = Umbra.investigation && Umbra.investigation.objectives ? Umbra.investigation.objectives(state) : []; } catch (err) { objs = []; }
+      for (const o of objs) {
+        if (o.done && !goals.done.has(o.label)) {
+          goals.done.add(o.label);
+          goals.queue.push('✔ Objetivo cumplido: ' + o.label);
+        }
+      }
+      if (goals.current) {
+        goals.since += dt;
+        if (goals.since > 3) goals.current = null;
+      } else if (goals.queue.length) {
+        goals.current = goals.queue.shift();
+        goals.since = 0;
+      }
       if (objs.length && objs.filter((o) => !o.done).length === 1) tip('una-mision', 'Queda una pura misión.');
       // Primera vez que equipa cada herramienta (o toma la linterna): su uso.
       const held = equipped(state);
@@ -300,6 +343,7 @@
     },
     drawUI(ctx, state) {
       drawTip(ctx, state);
+      drawGoal(ctx, state);
       drawHint(ctx, state);
       drawReadPrompt(ctx, state);
     },
