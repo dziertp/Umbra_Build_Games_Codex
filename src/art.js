@@ -89,6 +89,16 @@
         '................',
       ],
     },
+    completo: {
+      // Completo italiano: pan, salchicha, tomate, palta y mayo (como la bandera de Italia).
+      pal: { k: K, b: '#c8904a', B: '#a8703a', s: '#8a3a2a', t: '#d8402a', p: '#5a9a3a', m: '#f2efe6' },
+      px: [
+        '................', '................', '................', '................', '................',
+        '..kkkkkkkkkkkk..', '.kmmmmmmmmmmmmk.', '.kpppptttmmmmk..', '.kppppttttmmmmk.', '.ksssssssssssk..',
+        '.kbbbbbbbbbbbbk.', '.kBbbbbbbbbbbBk.', '..kkkkkkkkkkkk..', '................', '................',
+        '................',
+      ],
+    },
   };
   const UNKNOWN = {
     pal: { k: K, b: '#5a4a36', B: '#6b5d45' },

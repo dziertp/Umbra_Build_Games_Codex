@@ -416,6 +416,8 @@
   }
 
   function boardCell(i) {
+    // Con más de 9 objetos (p. ej. el completo), 4 columnas para que todo quepa en el panel.
+    if (data().tools.length > 9) return { x: 26 + (i % 4) * 62, y: 48 + Math.floor(i / 4) * 53, w: 60, h: 47 };
     return { x: 28 + (i % 3) * 83, y: 48 + Math.floor(i / 3) * 53, w: 78, h: 47 };
   }
 

@@ -22,6 +22,8 @@
   ];
 
   let introStart = performance.now();
+  const BITES = ['Ñam.', 'Le falta mayo.', 'La entidad te mira con envidia.'];
+  let bite = 0;
   const tips = { queue: [], current: null, shown: new Set(), t: 0, since: 0 };
 
   function tip(id, text) {
@@ -192,6 +194,14 @@
       tips.t = 0;
     },
     onKey(e, state) {
+      // Completo italiano: F le da un mordisco.
+      if (!state.paused && e.code === 'KeyF' && !e.repeat) {
+        const held = equipped(state);
+        if (held && held.id === 'completo' && !(state.journal && state.journal.open)) {
+          Umbra.tell(BITES[bite++ % BITES.length], 2);
+          return true;
+        }
+      }
       if (!state.paused) return false;
       e.preventDefault();
       if ((e.code === 'Enter' || e.code === 'Space') && !e.repeat) {
