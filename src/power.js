@@ -7,26 +7,58 @@
 
   const SWITCH_REACH = 26; // distancia para usar un interruptor desde el umbral
 
-  // Interruptor de cada habitación: en la pared, junto a una puerta, por dentro.
-  function switchesFor(D) {
+  const PLAYER_R = 8;
+
+  // ¿El segmento a→b cruza algún muro (incluye hojas de puerta y armario)?
+  function blockedLine(ax, ay, bx, by, walls) {
+    for (const w of walls) {
+      const d = (bx - ax) * (w[3] - w[1]) - (by - ay) * (w[2] - w[0]);
+      if (Math.abs(d) < 1e-9) continue;
+      const t = ((w[0] - ax) * (w[3] - w[1]) - (w[1] - ay) * (w[2] - w[0])) / d;
+      const u = ((w[0] - ax) * (by - ay) - (w[1] - ay) * (bx - ax)) / d;
+      if (t > 0 && t < 1 && u >= 0 && u <= 1) return true;
+    }
+    return false;
+  }
+
+  // ¿Hay algún lugar donde el jugador quepa, a su alcance y con línea directa al interruptor?
+  function reachable(G, m, sx, sy) {
+    for (let r = 10; r < SWITCH_REACH - 2; r += 4) {
+      for (let k = 0; k < 16; k++) {
+        const a = (k / 16) * Math.PI * 2;
+        const px = sx + Math.cos(a) * r;
+        const py = sy + Math.sin(a) * r;
+        if (!G.blocked(px, py, PLAYER_R, m) && !blockedLine(px, py, sx, sy, m.walls)) return true;
+      }
+    }
+    return false;
+  }
+
+  // Interruptor de cada habitación: en la pared junto a una puerta. Prueba ambos extremos
+  // de cada puerta, primero por dentro y luego por fuera, y se queda con el primero alcanzable
+  // (así no queda detrás de la hoja abierta de la puerta).
+  function switchesFor(G, D, floor) {
+    const m = G.model({ floor, closetOpen: false });
     return D.rooms.map((r, i) => {
       const [, rx, ry, rw, rh] = r;
+      const candidates = [];
       for (const d of D.doors || []) {
         if (d[0] === 'v') {
           const [, x, y1, y2] = d;
           const side = x === rx ? 1 : x === rx + rw ? -1 : 0;
           if (!side || y1 < ry || y2 > ry + rh) continue;
-          const y = y2 + 9 <= ry + rh - 8 ? y2 + 9 : y1 - 9 >= ry + 8 ? y1 - 9 : null;
-          if (y !== null) return { room: i, x: x + side * 5, y };
+          const ys = [y2 + 9, y1 - 9].filter((y) => y >= ry + 8 && y <= ry + rh - 8);
+          for (const s of [side, -side]) for (const y of ys) candidates.push({ x: x + s * 5, y });
         } else {
           const [, y, x1, x2] = d;
           const side = y === ry ? 1 : y === ry + rh ? -1 : 0;
           if (!side || x1 < rx || x2 > rx + rw) continue;
-          const x = x2 + 9 <= rx + rw - 8 ? x2 + 9 : x1 - 9 >= rx + 8 ? x1 - 9 : null;
-          if (x !== null) return { room: i, x, y: y + side * 5 };
+          const xs = [x2 + 9, x1 - 9].filter((x) => x >= rx + 8 && x <= rx + rw - 8);
+          for (const s of [side, -side]) for (const x of xs) candidates.push({ x, y: y + s * 5 });
         }
       }
-      return { room: i, x: rx + rw / 2, y: ry + 5 }; // sin puerta propia: pared superior
+      const ok = candidates.find((c) => reachable(G, m, c.x, c.y)) || candidates[0];
+      return ok ? { room: i, x: ok.x, y: ok.y } : { room: i, x: rx + rw / 2, y: ry + 5 }; // sin puerta: pared superior
     });
   }
 
@@ -61,7 +93,7 @@
       state.power = {
         on: true,
         lamps: state.G.floors.map((D) => D.rooms.map(() => false)),
-        switches: state.G.floors.map(switchesFor),
+        switches: state.G.floors.map((D, floor) => switchesFor(state.G, D, floor)),
       };
     },
     onKey(e, state) {
@@ -74,7 +106,8 @@
       let best = SWITCH_REACH;
       for (const s of state.power.switches[state.floor]) {
         const d = Math.hypot(s.x - p.x, s.y - p.y);
-        if (d < best) { best = d; target = s.room; }
+        // Solo interruptores a la vista: nada de encender a través de una pared.
+        if (d < best && !blockedLine(p.x, p.y, s.x, s.y, state.model.walls)) { best = d; target = s.room; }
       }
       if (target < 0) return false;
       if (e.repeat) return true;
