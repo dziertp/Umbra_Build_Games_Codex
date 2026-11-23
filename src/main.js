@@ -223,7 +223,8 @@
     ctx.font = '10px monospace';
     ctx.fillStyle = '#8c9cac';
     ctx.fillText('Identifica a la entidad antes de que te encuentre.', VIEW_W / 2, 125);
-    ctx.fillText('WASD / flechas: moverse · Shift: correr · E: interactuar · Esc: menú', VIEW_W / 2, 175);
+    ctx.fillText('WASD / flechas: moverse · Shift: correr', VIEW_W / 2, 170);
+    ctx.fillText('E: interactuar · L: linterna · Esc: menú', VIEW_W / 2, 183);
     ctx.fillStyle = C.fuse;
     ctx.fillText('Pulsa Enter o haz clic para comenzar', VIEW_W / 2, 205);
     // Los ojos en la oscuridad.
