@@ -562,19 +562,7 @@
     g.fillRect(tx + 3, ty + th - 3, 5, 2);
     g.fillRect(tx + tw - 8, ty + th - 3, 5, 2);
 
-    // Panel perforado con siluetas de herramientas (frente hacia abajo).
-    const [bx, by, bw, bh] = b.board;
-    g.fillStyle = C.shadow;
-    g.fillRect(bx + 1, by + 1, bw, bh);
-    g.fillStyle = C.furn;
-    g.fillRect(bx, by, bw, bh);
-    g.fillStyle = C.peg;
-    g.fillRect(bx + 1, by + 1, bw - 2, bh - 2);
-    g.fillStyle = C.pegHole;
-    for (let y = by + 2; y < by + bh - 1; y += 3) for (let x = bx + 2; x < bx + bw - 1; x += 3) g.fillRect(x, y, 1, 1);
-    g.fillStyle = C.toolShape;
-    const tools = [[4, 3, 6, 6], [13, 2, 3, 8], [20, 3, 8, 5], [31, 2, 2, 8], [36, 4, 7, 4], [46, 2, 5, 7], [55, 3, 9, 5], [67, 2, 4, 8]];
-    for (const [ox, oy, w, h] of tools) if (ox + w < bw - 1) g.fillRect(bx + ox, by + oy, w, Math.min(h, bh - oy - 1));
+    // El panel de equipo (estantería con herramientas) se dibuja en vivo: drawShelf().
 
     // Pizarra de objetivos (frente hacia la izquierda).
     const [ox, oy, ow, oh] = b.objectives;
@@ -672,6 +660,40 @@
     }
   }
 
+  // Panel de equipo: estantería de madera vista desde arriba, con dos repisas y las
+  // herramientas que siguen en ella (las que el jugador lleva desaparecen).
+  function drawShelf(ctx, state) {
+    const b = state.G.floors[0].base;
+    if (!b || !b.board || !Umbra.art) return;
+    const [bx, , bw] = b.board;
+    const by = b.board[1] + b.board[3] - 36; // sube hacia la vereda (la colisión no cambia)
+    ctx.fillStyle = C.shadow;
+    ctx.fillRect(bx + 2, by + 2, bw, 36);
+    ctx.fillStyle = C.edge;
+    ctx.fillRect(bx, by, bw, 36);
+    ctx.fillStyle = C.furn;
+    ctx.fillRect(bx + 1, by + 1, bw - 2, 34);
+    ctx.fillStyle = C.furnTop;
+    ctx.fillRect(bx + 1, by + 17, bw - 2, 2); // repisa del medio
+    ctx.fillRect(bx + 1, by + 1, bw - 2, 1);
+    const held = new Set(((state.tools && state.tools.slots) || []).filter(Boolean).map((t) => t.id));
+    const ids = ((Umbra.data && Umbra.data.tools) || []).map((t) => t.id);
+    const perRow = Math.ceil(ids.length / 2);
+    const step = Math.floor((bw - 4) / perRow);
+    ids.forEach((id, i) => {
+      if (held.has(id)) return;
+      const row = i < perRow ? 0 : 1;
+      const col = row ? i - perRow : i;
+      const x = bx + 2 + col * step + Math.floor((step - 16) / 2);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(bx + 2 + col * step, by + 1 + row * 18, step, 16);
+      ctx.clip();
+      Umbra.art.tool(ctx, id, x, by + 1 + row * 18, 1);
+      ctx.restore();
+    });
+  }
+
   // ---------- API ----------
   function map(ctx, state) {
     const floor = state.floor;
@@ -681,6 +703,7 @@
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(fc.canvas, fc.x, fc.y);
     drawProps(ctx, D);
+    if (floor === 0) drawShelf(ctx, state);
     for (const w of D.windows || []) line(ctx, w, C.window, 3);
     const [sx, sy, sw, sh] = D.stairs;
     ctx.fillStyle = C.stairs;
