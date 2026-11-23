@@ -133,7 +133,7 @@
       dx /= len;
       dy /= len;
       state.player.facing = Math.atan2(dy, dx);
-      const running = k.has('ShiftLeft') || k.has('ShiftRight');
+      const running = (k.has('ShiftLeft') || k.has('ShiftRight')) && state.player.canRun !== false; // stamina.js
       const speed = running ? PLAYER.run : PLAYER.walk;
       G.move(state.player, dx * speed * dt, dy * speed * dt, PLAYER.diameter / 2, state.model);
     }
