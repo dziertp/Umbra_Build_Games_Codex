@@ -82,7 +82,7 @@ No edites archivos de otra área sin que te lo pidan.
 
 1. `node tools/qa.cjs` debe pasar.
 2. Abre `index.html` en el navegador y juega la parte que cambiaste. Revisa la consola: sin errores.
-3. Commits pequeños con mensaje claro en español. `git pull --rebase` antes de `git push`.
+3. Commits pequeños con mensaje claro en español. **Varios agentes trabajan en la misma carpeta:** agrega solo tus archivos (`git add <archivo>`, nunca `git add -A` ni `git add .`) y actualiza con `git pull --rebase --autostash` antes de `git push`.
 4. Si agregas un recurso externo (imagen, sonido, fuente, librería) o generado con IA, regístralo en la tabla de `README.md` con autor, enlace, licencia y cambios.
 5. Explica qué cambiaste y cómo lo comprobaste. Si algo no se pudo verificar, dilo.
 
