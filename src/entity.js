@@ -107,10 +107,12 @@
   }
 
   function setPath(state, e, target) {
-    const p = state.G.path(gridFor(state, e.floor), e, target);
+    const g = gridFor(state, e.floor);
+    const p = state.G.path(g, e, target);
     if (p && p.points.length > 1) {
       e.path = p.points;
       e.step = 1;
+      e.pathGrid = g;
       return true;
     }
     e.path = null;
@@ -158,6 +160,7 @@
       if (inside && p.points.length > 1) {
         e.path = p.points;
         e.step = 1;
+        e.pathGrid = g;
         return true;
       }
     }
@@ -420,6 +423,8 @@
     update(dt, state) {
       const e = state.entity;
       if (!e) return;
+      // Si se abrió o cerró un armario, la ruta vieja puede atravesar sus puertas: recalcular.
+      if (e.path && e.pathGrid && e.pathGrid !== gridFor(state, e.floor)) e.path = null;
 
       if (e.mode === 'warn') {
         // Las lámparas y la linterna parpadean antes de la cacería.

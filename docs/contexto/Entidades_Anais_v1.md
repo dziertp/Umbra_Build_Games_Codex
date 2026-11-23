@@ -12,7 +12,7 @@ Las tarjetas de Demonology (Roblox) del diario del equipo sirvieron como referen
 | `brasa-velada` | La Brasa Velada | Orbes, silueta en el láser, huellas | Sus cacerías son más probables cuando el jugador está a oscuras (`prefersDark`). | Figura compacta de humo con una cavidad de luz fría en el pecho y dos colas curvas. |
 | `enramado` | El Enramado | Escritura, flores marchitas, respuesta en la radio | Corre un poco más rápido durante la cacería (`speed: 1.08`). | Silueta encorvada; mangas y espalda se abren en raíces finas, sin cuernos ni astas. |
 
-**Estado de esta entrega:** completadas por Anais como conceptos visuales v1 para las cuatro entidades. La adaptación a sprites con transparencia e integración en el juego queda como trabajo posterior.
+**Estado de la entrega conceptual:** completadas por Anais como conceptos visuales v1 para las cuatro entidades. El prototipo de sprite de La Pliegasombra de abajo inicia una etapa separada de adaptación al juego.
 
 ## Láminas visuales
 
@@ -22,6 +22,12 @@ Cada PNG es una hoja conceptual de 1024 × 1024 con cuatro vistas: frente, espal
 - [El Hilvanado](../../assets/entities/concept_sheets/hilvanado_4_vistas.png)
 - [La Brasa Velada](../../assets/entities/concept_sheets/brasa_velada_4_vistas.png)
 - [El Enramado](../../assets/entities/concept_sheets/enramado_4_vistas.png)
+
+## Prueba de sprite: La Pliegasombra
+
+Archivo: [pliegasombra_4_vistas_12x20.png](../../assets/entities/sprites/pliegasombra_4_vistas_12x20.png). Es una hoja RGBA transparente de **48 × 20 píxeles**, organizada en cuatro cuadros de **12 × 20 px**: frente, espalda, perfil izquierdo y perfil derecho. Usa una paleta corta de sombras y ojos claros, inspirada en la escala del sprite actual de la entidad en `src/entity.js`.
+
+Esta es una prueba visual de lectura a tamaño real, no está conectada todavía al juego. El siguiente paso es revisar el encaje con Dacier, responsable de la lógica y el dibujo de la entidad, antes de integrarla.
 
 ## Datos del juego
 

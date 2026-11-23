@@ -31,6 +31,16 @@
     pillow: '#8a8478', blanket: '#3a3f52',
     car: '#2c3238', carGlass: '#3c4a55',
     closet: '#3a2e25', closetLine: '#211a15', closetOpen: '#0b0a09',
+    piano: '#19171b', pianoTop: '#2a272d', keys: '#8a8478',
+    box: '#4f4232', boxTop: '#5c4d3a', tape: '#6b5d45',
+    glass: '#3c4a55',
+    spine: ['#5a2e2a', '#2e3f5a', '#5a4f2e', '#3e4a32'],
+    // Decoración (sin colisión)
+    frame: '#5a4632', canvasArt: ['#2c3a3a', '#3d2f2a', '#33303d'],
+    web: '#5c5d60', paper: '#8a8576', paperLine: '#6a6658',
+    pot: '#4a3626', leaf: '#5f5a3a', leafDry: '#6e5a3a',
+    stain: '#1a1613',
+    runner: '#3a2c22', runnerBorder: '#4a3a2c', runnerLine: '#2c2119',
   };
 
   // Material del suelo según el nombre de la habitación (datos del mapa).
@@ -44,6 +54,12 @@
   ];
   // Aspecto de cada mueble según su nombre.
   const FURNITURE_STYLE = [
+    [/piano/i, 'piano'],
+    [/reloj/i, 'clock'],
+    [/caja/i, 'box'],
+    [/librero|estanter/i, 'shelf'],
+    [/vitrina/i, 'cabinet'],
+    [/aparador|cómoda|tocador/i, 'drawers'],
     [/cama/i, 'bed'],
     [/sofá|sillón/i, 'fabric'],
     [/lavamanos|sanitario/i, 'porcelain'],
@@ -271,6 +287,49 @@
       g.fillRect(x + 3, y + 3, w - 6, h - 6);
     } else if (style === 'counter') {
       box(g, x, y, w, h, C.counter, C.counterTop);
+    } else if (style === 'piano') {
+      box(g, x, y, w, h, C.piano, C.pianoTop);
+      const ky = y + h - 7;
+      g.fillStyle = C.keys;
+      g.fillRect(x + 3, ky, w - 6, 4);
+      g.fillStyle = C.piano;
+      for (let kx = x + 5; kx < x + w - 4; kx += 4) g.fillRect(kx, ky, 1, 2);
+    } else if (style === 'clock') {
+      box(g, x, y, w, h, C.furn, C.furnTop);
+      g.fillStyle = C.paper;
+      g.fillRect(x + Math.round(w / 2) - 3, y + 3, 6, 6);
+      g.fillStyle = C.edge;
+      g.fillRect(x + Math.round(w / 2), y + 4, 1, 3);
+    } else if (style === 'box') {
+      // Pila de cajas: una o dos según el tamaño.
+      const n = w > 32 ? 2 : 1;
+      const bw = Math.floor(w / n);
+      for (let i = 0; i < n; i++) {
+        box(g, x + i * bw, y, bw - (n > 1 ? 1 : 0), h, C.box, C.boxTop);
+        g.fillStyle = C.tape;
+        g.fillRect(x + i * bw + Math.floor(bw / 2) - 1, y + 1, 2, h - 2);
+      }
+    } else if (style === 'shelf') {
+      box(g, x, y, w, h, C.furn, C.furnTop);
+      // Lomos de libros en filas.
+      const vertical = h > w;
+      const len = vertical ? h : w;
+      for (let k = 3, i = 0; k < len - 3; k += 3, i++) {
+        g.fillStyle = C.spine[(i * 7 + (k >> 2)) % C.spine.length];
+        if (vertical) g.fillRect(x + 3, y + k, w - 6, 2);
+        else g.fillRect(x + k, y + 3, 2, h - 6);
+      }
+    } else if (style === 'cabinet') {
+      box(g, x, y, w, h, C.furn, C.furnTop);
+      g.fillStyle = C.glass;
+      g.fillRect(x + 3, y + 3, w - 6, h - 6);
+      g.fillStyle = C.edge;
+      g.fillRect(x + Math.round(w / 2), y + 3, 1, h - 6);
+    } else if (style === 'drawers') {
+      box(g, x, y, w, h, C.furn, C.furnTop);
+      g.fillStyle = C.edge;
+      if (w >= h) for (let dx = x + Math.round(w / 3); dx < x + w - 3; dx += Math.round(w / 3)) g.fillRect(dx, y + 2, 1, h - 4);
+      else for (let dy = y + Math.round(h / 3); dy < y + h - 3; dy += Math.round(h / 3)) g.fillRect(x + 2, dy, w - 4, 1);
     } else if (style === 'car') {
       box(g, x, y, w, h, C.car, null);
       g.fillStyle = C.carGlass;
@@ -282,6 +341,86 @@
         g.fillStyle = C.edge;
         g.fillRect(x + 3, y + 3, w - 6, 1);
       }
+    }
+  }
+
+  // ---------- Decoración sin colisión (D.decor: [tipo, x, y, ancho, alto]) ----------
+  const FLOOR_DECOR = new Set(['runner', 'stain', 'papers', 'books', 'plant']);
+
+  function decor(g, d, rooms) {
+    const [type, x, y, w, h] = d;
+    const seed = Math.abs(Math.round(x * 7 + y * 13));
+    if (type === 'runner') {
+      g.fillStyle = C.runnerBorder;
+      g.fillRect(x, y, w, h);
+      g.fillStyle = C.runner;
+      g.fillRect(x + 2, y + 2, w - 4, h - 4);
+      g.fillStyle = C.runnerLine;
+      if (w > h) g.fillRect(x + 4, y + Math.floor(h / 2), w - 8, 1);
+      else g.fillRect(x + Math.floor(w / 2), y + 4, 1, h - 8);
+    } else if (type === 'stain') {
+      g.fillStyle = C.stain;
+      g.fillRect(x + 2, y, w - 4, h);
+      g.fillRect(x, y + 2, w, h - 4);
+      g.fillRect(x + w, y + Math.floor(h / 2), 2, 1);
+    } else if (type === 'papers') {
+      for (let i = 0; i < 3; i++) {
+        const px = x + ((seed + i * 5) % 9) - 4;
+        const py = y + ((seed + i * 3) % 7) - 3;
+        g.fillStyle = C.paperLine;
+        g.fillRect(px, py, 5, 6);
+        g.fillStyle = C.paper;
+        g.fillRect(px, py, 4, 5);
+        g.fillStyle = C.paperLine;
+        g.fillRect(px + 1, py + 2, 2, 1);
+      }
+    } else if (type === 'books') {
+      for (let i = 0; i < 3; i++) {
+        const px = x + i * 4 - 4 + (i === 1 ? 1 : 0);
+        const py = y + (i % 2) * 3;
+        g.fillStyle = C.edge;
+        g.fillRect(px - 1, py - 1, 6, 5);
+        g.fillStyle = C.spine[(seed + i) % C.spine.length];
+        g.fillRect(px, py, 4, 3);
+      }
+    } else if (type === 'plant') {
+      // Planta seca en maceta.
+      g.fillStyle = C.edge;
+      g.fillRect(x - 4, y - 1, 8, 6);
+      g.fillStyle = C.pot;
+      g.fillRect(x - 3, y, 6, 4);
+      g.fillStyle = C.leafDry;
+      g.fillRect(x - 1, y - 5, 1, 4);
+      g.fillRect(x + 1, y - 4, 1, 3);
+      g.fillStyle = C.leaf;
+      g.fillRect(x - 3, y - 4, 2, 1);
+      g.fillRect(x + 2, y - 6, 2, 1);
+      g.fillRect(x, y - 7, 1, 2);
+    } else if (type === 'painting') {
+      g.fillStyle = C.frame;
+      g.fillRect(x, y, w, h);
+      g.fillStyle = C.canvasArt[seed % C.canvasArt.length];
+      if (w > h) g.fillRect(x + 1, y + 1, w - 2, Math.max(1, h - 2));
+      else g.fillRect(x + 1, y + 1, Math.max(1, w - 2), h - 2);
+    } else if (type === 'web') {
+      // Telaraña en la esquina de habitación más cercana (se orienta sola).
+      let cx = x, cy = y, sx = 1, sy = 1, best = Infinity;
+      for (const r of rooms || []) {
+        for (const [px, py, dx, dy] of [[r[1], r[2], 1, 1], [r[1] + r[3], r[2], -1, 1], [r[1], r[2] + r[4], 1, -1], [r[1] + r[3], r[2] + r[4], -1, -1]]) {
+          const dd = Math.hypot(px - (x + w / 2), py - (y + h / 2));
+          if (dd < best) { best = dd; cx = px + dx * 4; cy = py + dy * 4; sx = dx; sy = dy; }
+        }
+      }
+      const n = Math.min(w, h);
+      g.fillStyle = C.web;
+      const dot = (i, j) => g.fillRect(cx + sx * i - (sx < 0 ? 1 : 0), cy + sy * j - (sy < 0 ? 1 : 0), 1, 1);
+      for (let i = 0; i < n; i++) {
+        dot(i, 0);
+        dot(0, i);
+        if (i % 2 === 0) dot(i, i);
+      }
+      for (let i = 0; i <= 5; i++) dot(5 - i, i);
+      for (let i = 0; i <= 8; i += 2) dot(8 - i, i);
     }
   }
 
@@ -300,7 +439,9 @@
       const rs = styleFor(RUGS, r[0], null);
       if (rs) rug(g, r, rs);
     }
+    for (const d of D.decor || []) if (FLOOR_DECOR.has(d[0])) decor(g, d, D.rooms);
     for (const f of D.furniture) furniture(g, f);
+    for (const d of D.decor || []) if (!FLOOR_DECOR.has(d[0])) decor(g, d, D.rooms);
     for (const ci of D.circles || []) {
       g.fillStyle = C.shadow;
       g.beginPath();
@@ -396,15 +537,81 @@
     for (const [ex, ey, w] of EYES[dir]) ctx.fillRect(x + ex, y + ey, w, 1);
   }
 
+  // ---------- Nombre de la habitación ----------
+  // Al entrar a otra habitación, su nombre aparece abajo a la derecha ~2 s, con fundido
+  // en 4 pasos (sin degradado suave). Queda sobre la franja de mensajes y lejos del panel
+  // de herramientas (abajo a la izquierda).
+  const ROOM_LABEL = { fadeIn: 0.3, hold: 1.6, fadeOut: 0.4 };
+  const roomLabel = { key: null, name: '', t: Infinity };
+
+  function roomAtPlayer(state) {
+    const p = state.player;
+    let best = null;
+    for (const r of state.G.floors[state.floor].rooms) {
+      if (p.x >= r[1] && p.x < r[1] + r[3] && p.y >= r[2] && p.y < r[2] + r[4] && (!best || r[3] * r[4] < best[3] * best[4])) best = r;
+    }
+    return best;
+  }
+
+  function updateRoomLabel(dt, state) {
+    const r = roomAtPlayer(state);
+    const key = r ? state.floor + ':' + r[0] : roomLabel.key;
+    if (r && key !== roomLabel.key) {
+      roomLabel.key = key;
+      roomLabel.name = r[0];
+      roomLabel.t = 0;
+    } else {
+      roomLabel.t += dt;
+    }
+  }
+
+  function drawRoomLabel(ctx, state) {
+    const { fadeIn, hold, fadeOut } = ROOM_LABEL;
+    const t = roomLabel.t;
+    if (t >= fadeIn + hold + fadeOut || !roomLabel.name) return;
+    let a = t < fadeIn ? t / fadeIn : t < fadeIn + hold ? 1 : 1 - (t - fadeIn - hold) / fadeOut;
+    a = Math.ceil(a * 4) / 4; // 4 niveles
+    if (a <= 0) return;
+    const { w, h } = state.view;
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.font = 'bold 9px monospace';
+    const label = roomLabel.name.toUpperCase();
+    const tw = Math.ceil(ctx.measureText(label).width);
+    const bw = tw + 20;
+    const bx = w - bw - 6;
+    const by = h - 41;
+    ctx.fillStyle = '#07090c';
+    ctx.fillRect(bx, by, bw, 15);
+    ctx.fillStyle = '#3a3328';
+    ctx.fillRect(bx, by, bw, 1);
+    ctx.fillRect(bx, by + 14, bw, 1);
+    ctx.fillStyle = '#e1b66e';
+    ctx.fillRect(bx + 4, by + 7, 3, 1);
+    ctx.fillRect(bx + bw - 7, by + 7, 3, 1);
+    ctx.fillStyle = '#d8d2c4';
+    ctx.textAlign = 'left';
+    ctx.fillText(label, bx + 10, by + 11);
+    ctx.restore();
+  }
+
   Umbra.render = { map, player, sprite: spriteCanvas };
 
   Umbra.register({
     order: 6, // después de lighting.js (5): los ojos van sobre la oscuridad
     start() {
       floorCache.length = 0;
+      roomLabel.key = null;
+      roomLabel.t = Infinity;
+    },
+    update(dt, state) {
+      updateRoomLabel(dt, state);
     },
     drawLight(ctx, state) {
       eyes(ctx, state);
+    },
+    drawUI(ctx, state) {
+      drawRoomLabel(ctx, state);
     },
   });
 })();
