@@ -39,9 +39,9 @@ La oscuridad es parte del juego: solo se ve lo que alcanza la luz, los muros tap
 | Correr (gasta stamina) | Mantener Shift |
 | Interactuar: panel de equipo, pizarra, camión, interruptores, armarios, fusibles | E |
 | Elegir objeto del inventario | 1 · 2 · 3 · 4 |
-| Usar la herramienta equipada | F |
+| Usar el objeto equipado (incluida la linterna) | F |
 | Encender o apagar la linterna (si la llevas) | L |
-| Abrir o cerrar el diario | J o Tab (Q/E cambian de pestaña) |
+| Abrir o cerrar el diario | J o Tab (Q/E cambian de pestaña; clic tacha una entidad, Enter o clic derecho la elige) |
 | Silenciar o activar el sonido | M |
 | Mostrar u ocultar la ayuda de controles | K |
 | Volver al menú | Esc |
@@ -77,6 +77,18 @@ Trabajamos con **Codex** y **Claude** como asistentes de programación, cada int
 - Agregamos el campamento base, el panel de equipo en primera persona, el inventario, la stamina, el retrato que reacciona, el arte pixel art del escenario y el audio.
 
 **Qué mejoramos a partir de pruebas:** cada cambio se verificó con pruebas automáticas en el navegador (bots que recorren la casa, huyen de la entidad o se esconden) y con capturas. Con esas pruebas corregimos, entre otros: la entidad que se alejaba de su habitación rodeando por el pasillo, interruptores que se podían activar a través de las paredes o que quedaban en el hueco de una puerta, la entidad que atravesaba un armario recién cerrado, y la velocidad de cacería, que ajustamos dos veces para que huir solo corriendo no bastara y esconderse tuviera sentido.
+
+## Detalles de verificación en vivo
+
+Elementos pedidos por la organización durante la jornada, para verificar que el juego se programó en vivo:
+
+| Detalle | Dónde está |
+| --- | --- |
+| Un completo italiano | Objeto del panel de equipo del campamento ("No sirve de mucho, pero por si te da hambre"). Se equipa y se usa con F. |
+| Referencia a 31 minutos | Un diario viejo en el suelo del living: acércate y presiona E para leer el titular. |
+| "Queda una pura misión" | Aparece en la pizarra de objetivos y como consejo cuando queda un solo objetivo pendiente. |
+| El número 23 | En el buzón del campamento y en el título del diario ("Expediente N.º 23"). |
+| Codex | Cuadro "CODEX" en el hall de la mansión y "Hecho en vivo con Codex" en el menú. |
 
 ## Código de honor
 
