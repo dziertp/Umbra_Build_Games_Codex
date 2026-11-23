@@ -47,10 +47,22 @@
     return found;
   }
 
+  let entered = false;
   Umbra.base = { itemInReach };
 
   Umbra.register({
     order: 3, // después de journal/ui, antes de power.js y de la E de main.js
+    start() {
+      entered = false;
+    },
+    // Al entrar a la casa por primera vez (cruzar el porche), un mensaje de bienvenida.
+    update(dt, state) {
+      if (entered || state.floor !== 0) return;
+      if (!state.G.outdoors(0, state.player.x, state.player.y)) {
+        entered = true;
+        Umbra.tell('Mansión Umbra. Encuentra la habitación de la entidad.', 4);
+      }
+    },
     onKey(e, state) {
       if (e.code !== 'KeyE' || state.scene !== 'play') return false;
       const it = itemInReach(state);

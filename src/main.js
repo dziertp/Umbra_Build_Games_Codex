@@ -69,7 +69,7 @@
     state.scene = 'play';
     Umbra.call('start', state);
     Umbra.emit('start');
-    tell('Planta baja. Explora la mansión.');
+    tell('Campamento. Toma tu equipo en el panel (E) y entra a la casa.', 5);
   }
 
   function nearRect(r, margin) {

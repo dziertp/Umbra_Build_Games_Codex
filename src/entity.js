@@ -14,6 +14,7 @@
     roam: 40,            // margen alrededor de la habitación favorita
     pause: [1, 4],       // segundos de espera entre paseos
     eventEvery: [20, 40],
+    firstEvent: [15, 25], // primera pista, contada desde que el jugador entra por primera vez
     cutEvery: [45, 90],  // cada cuánto intenta cortar la luz (si hay alguna encendida)
     excluded: ['Vestíbulo', 'Hall'],
     // Cacería
@@ -194,18 +195,20 @@
     return { x: rx + rw / 2, y: ry + rh / 2 };
   }
 
-  function subtleEvent(state, e) {
-    const here = roomAt(state, e.floor, e.x, e.y) || e.room;
+  // firstClue: la primera pista siempre nombra la habitación favorita (o dice pasos arriba/abajo).
+  function subtleEvent(state, e, firstClue) {
+    const here = firstClue ? e.room : roomAt(state, e.floor, e.x, e.y) || e.room;
     let kind, text;
     if (state.floor === e.floor) {
       const where = withArticle(here[0]);
       const ofWhere = where.replace(/^el /, 'l '); // de + el = del
-      [kind, text] = pick([
+      const options = [
         ['thud', 'Algo cayó en ' + where + '.'],
         ['creak', 'Un crujido viene de' + (ofWhere === where ? ' ' : '') + ofWhere + '.'],
         ['door', 'Una puerta se movió cerca de' + (ofWhere === where ? ' ' : '') + ofWhere + '.'],
-        ['whisper', 'Un susurro, apenas audible.'],
-      ]);
+      ];
+      if (!firstClue) options.push(['whisper', 'Un susurro, apenas audible.']);
+      [kind, text] = pick(options);
     } else {
       kind = 'steps';
       text = e.floor > state.floor ? 'Escuchas pasos arriba.' : 'Escuchas pasos abajo.';
@@ -458,9 +461,18 @@
         else e.wait = 1;
       }
 
-      // Afuera no se oye nada: los eventos esperan a que el jugador vuelva a la casa.
-      if ((e.nextEvent -= dt) <= 0 && !playerOutdoors(state)) {
-        subtleEvent(state, e);
+      // El tiempo afuera (campamento, porche) no cuenta: eventos, apagón y cacería esperan.
+      if (playerOutdoors(state)) return;
+      if (!e.entered) {
+        // Primera vez dentro de la casa: primera pista garantizada en 15–25 s.
+        e.entered = true;
+        e.firstClue = true;
+        e.nextEvent = rand(...CFG.firstEvent);
+      }
+
+      if ((e.nextEvent -= dt) <= 0) {
+        subtleEvent(state, e, e.firstClue);
+        e.firstClue = false;
         e.nextEvent = rand(...CFG.eventEvery);
       }
 
@@ -475,8 +487,7 @@
       }
 
       if ((e.nextHunt -= dt) <= 0) {
-        if (playerOutdoors(state)) e.nextHunt = rand(...CFG.huntRetry); // no caza a quien está afuera
-        else if (huntRoll(state, e)) beginWarn(state, e);
+        if (huntRoll(state, e)) beginWarn(state, e);
         else e.nextHunt = rand(...CFG.huntRetry);
       }
     },
