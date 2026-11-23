@@ -177,36 +177,9 @@
     ctx.save();
     ctx.translate(state.view.ox, state.view.oy);
 
-    for (const r of D.rooms) rect(r.slice(1, 5), r[5]);
-    for (const w of D.windows || []) line(w, C.window, 3);
-    const [sx, sy, sw, sh] = D.stairs;
-    rect(D.stairs, C.stairs);
-    ctx.fillStyle = '#5e5247';
-    for (let y = sy + 6; y < sy + sh; y += 12) ctx.fillRect(sx + 2, y, sw - 4, 2);
-    for (const f of D.furniture) rect(f.slice(1, 5), C.furniture, C.furnitureEdge);
-    for (const c of D.circles) {
-      ctx.fillStyle = C.furniture;
-      ctx.beginPath();
-      ctx.arc(c[0], c[1], c[2], 0, Math.PI * 2);
-      ctx.fill();
-    }
-    if (D.closet) rect(D.closet, C.closet, state.closetOpen[state.floor] ? C.door : '#6fb3a3');
-    if (D.fuse) rect(D.fuse, C.fuse);
-    for (const s of state.model.walls) line(s, C.wall, s[4]);
+    Umbra.render.map(ctx, state); // suelos, muebles, armario, muros (src/render.js)
     Umbra.call('drawWorld', ctx, state);
-
-    // Jugador: referencia de 24 u con ojos hacia donde mira.
-    ctx.fillStyle = C.player;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, PLAYER.visual / 2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#10151c';
-    const ex = Math.cos(p.facing) * 5;
-    const ey = Math.sin(p.facing) * 5;
-    const px = -Math.sin(p.facing) * 3;
-    const py = Math.cos(p.facing) * 3;
-    ctx.fillRect(Math.round(p.x + ex + px - 1), Math.round(p.y + ey + py - 1), 2, 2);
-    ctx.fillRect(Math.round(p.x + ex - px - 1), Math.round(p.y + ey - py - 1), 2, 2);
+    Umbra.render.player(ctx, state); // sprite del investigador (src/render.js)
     ctx.restore();
     Umbra.call('drawLight', ctx, state);
     Umbra.call('drawUI', ctx, state);
@@ -228,19 +201,21 @@
     ctx.textAlign = 'center';
     ctx.fillStyle = C.text;
     ctx.font = 'bold 32px monospace';
-    ctx.fillText('UMBRA', VIEW_W / 2, 95);
+    ctx.fillText('UMBRA', VIEW_W / 2, 66);
     ctx.font = '10px monospace';
     ctx.fillStyle = '#8c9cac';
-    ctx.fillText('Identifica a la entidad antes de que te encuentre.', VIEW_W / 2, 125);
-    ctx.fillText('WASD / flechas: moverse · Shift: correr', VIEW_W / 2, 170);
-    ctx.fillText('E: interactuar · L: linterna · Esc: menú', VIEW_W / 2, 183);
-    ctx.fillText('Tab: diario', VIEW_W / 2, 196);
+    ctx.fillText('Encuentra evidencias, identifica a la entidad', VIEW_W / 2, 96);
+    ctx.fillText('en el diario y sal por la puerta principal.', VIEW_W / 2, 109);
+    ctx.fillText('WASD / Flechas: moverse · Shift: correr', VIEW_W / 2, 148);
+    ctx.fillText('E: interactuar / esconderse · L: linterna', VIEW_W / 2, 162);
+    ctx.fillText('1–8: seleccionar herramientas · F: usar herramienta', VIEW_W / 2, 176);
+    ctx.fillText('Tab / J: diario · M: activar o silenciar audio', VIEW_W / 2, 190);
     ctx.fillStyle = C.fuse;
-    ctx.fillText('Pulsa Enter o haz clic para comenzar', VIEW_W / 2, 219);
+    ctx.fillText('Enter o clic para comenzar la partida', VIEW_W / 2, 221);
     // Los ojos en la oscuridad.
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(VIEW_W / 2 - 9, 145, 6, 2);
-    ctx.fillRect(VIEW_W / 2 + 3, 145, 6, 2);
+    ctx.fillRect(VIEW_W / 2 - 9, 124, 6, 2);
+    ctx.fillRect(VIEW_W / 2 + 3, 124, 6, 2);
   }
 
   // ---------- Escalado a pantalla ----------
@@ -258,6 +233,7 @@
     const dt = Math.min(0.25, (now - last) / 1000);
     last = now;
     update(dt);
+    Umbra.call('updateAudio', state);
     if (state.scene === 'play') drawWorld();
     else if (state.scene === 'result') Umbra.call('drawResult', ctx, state);
     else drawMenu();

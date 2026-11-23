@@ -73,10 +73,11 @@ Incluye todo lo que no se creó durante la jornada (propio o ajeno), todo recurs
 | Maqueta de recorridos Umbra V4 | Material previo propio (código) | Equipo Umbra, con asistencia de IA | `prototypes/v4/` | MIT | Se reutilizaron los datos de los mapas, `geometry.js` y las pruebas; se reformateó el código. La interfaz de medición no forma parte del juego. |
 | Planos estructurales, capturas y mediciones de recorridos | Material previo propio (diseño) | Equipo Umbra | `docs/planos/`, `docs/recorridos/` | MIT | Referencia de diseño para la geometría de la mansión. [completar: ajustes realizados durante la jornada] |
 | Documentos de contexto y plan de la jornada | Material previo propio (documentación) | Equipo Umbra, con asistencia de IA (Claude) | `docs/contexto/` | MIT | Ninguno. |
-| Conceptos pixel art de cuatro entidades (cuatro vistas cada una) | Imagen generada con IA para Umbra | Anais Tapia, con OpenAI API (`gpt-image-2`) | `assets/entities/concept_sheets/` · [registro de diseño](docs/contexto/Entidades_Anais_v1.md) | OpenAI Services Agreement: la salida se asigna al cliente; no cubierta por MIT | Nombres, descripciones y rasgos originales para Umbra; láminas de referencia con fondo opaco, no sprites integrados. |
+| Conceptos pixel art de cuatro entidades (cuatro vistas cada una) | Imagen generada y ajustada con IA para Umbra | Anais Tapia, con OpenAI API (`gpt-image-2`) | `assets/entities/concept_sheets/` · [registro de diseño](docs/contexto/Entidades_Anais_v1.md) | OpenAI Services Agreement: salida asignada al cliente; fuera de MIT | Redibujadas para acercarse al pixel art de los prototipos; fondo negro opaco, no sprites integrados. |
 | Imágenes de referencia de personajes (Hannah, Turner, Chloe) | Material previo propio (imagen) | [completar: autor / herramienta de IA] | `docs/personajes/` | [completar] | [completar] |
 | Audios preliminares de ambiente y tropiezo | Material previo propio (audio) | [completar: autor / herramienta] | [completar: subir a `docs/audio/` si se usan] | [completar] | [completar] |
 | Claude (Anthropic) y Codex (OpenAI) | Herramientas de IA | Anthropic, OpenAI | https://claude.ai · https://openai.com/codex | Según sus términos de uso | Asistencia en código, pruebas y documentación. |
+| Ambiente y efectos sintetizados | Audio generado en tiempo real | Equipo Umbra, con asistencia de Codex | [src/audio.js](src/audio.js) | MIT | Síntesis con Web Audio API. |
 | [completar: recursos externos añadidos durante el día] | | | | | |
 
 **Inspiración (no se incorporó material de estos juegos):** Phasmophobia (Kinetic Games) y Demonology (Roblox) en jugabilidad; Hotline Miami, Undertale y Pokémon en lo visual; Resident Evil 7 y Village en la estructura del escenario.
@@ -97,4 +98,3 @@ docs/                   planos, mediciones, contexto y referencias (material pre
 
 El código de Umbra se publica bajo licencia **MIT** (ver `LICENSE`).
 Los recursos de terceros conservan sus propias licencias, indicadas en la tabla anterior.
-

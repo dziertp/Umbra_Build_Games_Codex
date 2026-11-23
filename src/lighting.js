@@ -161,11 +161,12 @@
   }
 
   // Formas de un nivel de luz (halo + cono), en coordenadas de pantalla.
+  // El halo es la luz que derrama la linterna: sin linterna, oscuridad total (solo los ojos).
   function shapes(c, x, y, facing, halo, cone, reach) {
+    if (!torch) return;
     c.beginPath();
     c.arc(x, y, halo, 0, Math.PI * 2);
     c.fill();
-    if (!torch) return;
     c.beginPath();
     c.moveTo(x, y);
     c.arc(x, y, reach, facing - cone / 2, facing + cone / 2);
@@ -197,6 +198,31 @@
     }
     d.globalCompositeOperation = 'source-over';
   }
+
+  // ¿El jugador está en oscuridad total? (sin linterna, sin lámpara en su habitación y fuera de la luna)
+  function pointInQuad(q, x, y) {
+    let inside = false;
+    for (let i = 0, j = 6; i < 8; j = i, i += 2) {
+      if ((q[i + 1] > y) !== (q[j + 1] > y) && x < ((q[j] - q[i]) * (y - q[i + 1])) / (q[j + 1] - q[i + 1]) + q[i]) inside = !inside;
+    }
+    return inside;
+  }
+  light.playerInDarkness = function (state) {
+    const flicker = state.entity && state.entity.flicker;
+    if (light.on && !(flicker && flicker.torch)) return false;
+    const p = state.player;
+    const D = state.G.floors[state.floor];
+    if (Umbra.power && !(flicker && flicker.lamps)) {
+      for (const r of Umbra.power.litRooms(state, state.floor)) {
+        if (p.x >= r[1] && p.x < r[1] + r[3] && p.y >= r[2] && p.y < r[2] + r[4]) return false;
+      }
+    }
+    for (const m of moonStrips(D, state.floor)) {
+      const r = m.room;
+      if (p.x >= r[1] && p.x < r[1] + r[3] && p.y >= r[2] && p.y < r[2] + r[4] && pointInQuad(m.quad, p.x, p.y)) return false;
+    }
+    return true;
+  };
 
   light.visibility = visibility; // expuesto para pruebas y para otros sistemas (p. ej. la entidad)
   Umbra.lighting = light;
