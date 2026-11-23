@@ -149,6 +149,29 @@
     ctx.restore();
   }
 
+  function equipped(state) {
+    const tl = state.tools;
+    return tl && tl.slots && tl.selected >= 0 ? tl.slots[tl.selected] : null;
+  }
+
+  // Uso de la herramienta equipada: línea pequeña justo encima de la barra de inventario.
+  function drawHint(ctx, state) {
+    const held = equipped(state);
+    if (!held || !held.hint || state.scene !== 'play' || (state.journal && state.journal.open)) return;
+    const { w, h } = state.view;
+    ctx.save();
+    ctx.font = '8px monospace';
+    const tw = Math.min(w - 20, Math.ceil(ctx.measureText(held.hint).width) + 8);
+    const x = Math.round((w - tw) / 2);
+    const y = h - 74;
+    ctx.fillStyle = 'rgba(7,9,12,0.8)';
+    ctx.fillRect(x, y, tw, 11);
+    ctx.fillStyle = '#c9b07a';
+    ctx.textAlign = 'center';
+    ctx.fillText(held.hint, w / 2, y + 8, tw - 6);
+    ctx.restore();
+  }
+
   function hasFlashlight(state) {
     const slots = state.tools && state.tools.slots;
     return !!slots && slots.some((t) => t && t.id === 'flashlight');
@@ -193,6 +216,13 @@
         tip('switch', 'Busca los interruptores junto a las puertas para encender la luz.');
       }
       if (state.stamina && state.stamina.value < 0.3) tip('stamina', 'Correr te cansa. Camina para recuperarte.');
+      // Primera vez que equipa cada herramienta (o toma la linterna): su uso.
+      const held = equipped(state);
+      if (held && held.hint) tip('hint:' + held.id, held.hint);
+      if (hasFlashlight(state)) {
+        const fl = state.tools.slots.find((t) => t && t.id === 'flashlight');
+        if (fl && fl.hint) tip('hint:flashlight', fl.hint);
+      }
       if (tips.current) {
         tips.since += dt;
         if (tips.since > 5) tips.current = null;
@@ -203,6 +233,7 @@
     },
     drawUI(ctx, state) {
       drawTip(ctx, state);
+      drawHint(ctx, state);
     },
     drawOverlay(ctx, state) {
       if (state.paused) drawObjective(ctx, state);
