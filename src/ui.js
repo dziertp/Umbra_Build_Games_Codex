@@ -1,6 +1,18 @@
 (function () {
   'use strict';
 
+  const controls = [
+    'WASD / Flechas: moverse',
+    'Shift: correr',
+    'E: interactuar',
+    'L: encender/apagar linterna',
+    '1–8: seleccionar herramienta',
+    'F: usar herramienta',
+    'Tab / J: abrir diario',
+    'Esc: volver al menú',
+    'H: mostrar/ocultar controles',
+  ];
+
   function atMainDoor(state) {
     // Hueco entre los muros del vestíbulo y el porche de la mansión.
     const { x, y } = state.player;
@@ -22,10 +34,15 @@
     order: 1,
     start(state) {
       state.investigation = { startedAt: performance.now(), result: null };
+      state.showControls = true;
     },
     onKey(event, state) {
       if (state.scene === 'result') {
         if (event.code === 'Enter' && !event.repeat) state.scene = 'menu';
+        return true;
+      }
+      if (state.scene === 'play' && !state.journal?.open && event.code === 'KeyH') {
+        if (!event.repeat) state.showControls = !state.showControls;
         return true;
       }
       if (event.code !== 'KeyE' || !atMainDoor(state)) return false;
@@ -45,6 +62,27 @@
       state.keys.clear();
       state.scene = 'result';
       return true;
+    },
+    drawUI(ctx, state) {
+      if (state.scene !== 'play' || state.journal?.open || !state.showControls) return;
+
+      const width = 156;
+      const lineHeight = 10;
+      const padding = 6;
+      const x = state.view.w - width - 6;
+      // La depuración usa dos líneas en el borde superior.
+      const y = state.debug ? 26 : 6;
+      ctx.save();
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+      ctx.fillRect(x, y, width, controls.length * lineHeight + padding * 2);
+      ctx.font = '8px monospace';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      controls.forEach((control, index) => {
+        ctx.fillStyle = index === controls.length - 1 ? '#e1b66e' : '#ded7c7';
+        ctx.fillText(control, x + padding, y + padding + index * lineHeight);
+      });
+      ctx.restore();
     },
     drawResult(ctx, state) {
       const { caught, correct, entityName, seconds } = state.investigation.result;
