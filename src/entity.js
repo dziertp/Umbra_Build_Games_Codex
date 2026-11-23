@@ -137,6 +137,7 @@
   // Avanza por la ruta; devuelve true al llegar al final.
   function follow(e, speed, dt) {
     if (!e.path) return true;
+    if (e.doorWait > 0) return false; // abriendo una puerta (doors.js)
     let move = speed * dt;
     while (move > 0 && e.step < e.path.length) {
       const t = e.path[e.step];

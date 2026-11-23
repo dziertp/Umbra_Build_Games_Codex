@@ -783,6 +783,41 @@
     });
   }
 
+  // Puertas de madera: abiertas, la hoja girada desde la bisagra (con manilla); cerradas, cubren el vano.
+  function drawDoors(ctx, state) {
+    const D = state.G.floors[state.floor];
+    for (const s of state.model.walls) {
+      if (!s[5]) continue;
+      const [x1, y1, x2, y2] = s;
+      const horiz = Math.abs(y2 - y1) < Math.abs(x2 - x1);
+      const lx = Math.min(x1, x2), ly = Math.min(y1, y2);
+      const len = Math.round(Math.hypot(x2 - x1, y2 - y1));
+      const th = 3;
+      const rx = horiz ? lx : x1 - 1.5, ry = horiz ? y1 - 1.5 : ly;
+      const rw = horiz ? len : th, rh = horiz ? th : len;
+      ctx.fillStyle = C.edge;
+      ctx.fillRect(Math.round(rx) - 1, Math.round(ry) - 1, rw + 2, rh + 2);
+      ctx.fillStyle = s[5] === 'door' ? '#5a4632' : '#4a3a2a';
+      ctx.fillRect(Math.round(rx), Math.round(ry), rw, rh);
+      ctx.fillStyle = '#6b563e';
+      if (horiz) ctx.fillRect(Math.round(rx) + 1, Math.round(ry), rw - 2, 1);
+      else ctx.fillRect(Math.round(rx), Math.round(ry) + 1, 1, rh - 2);
+      // Bisagra en el extremo de la hoja (abierta) o en el marco (cerrada), manilla al otro lado.
+      ctx.fillStyle = '#8a8a90';
+      ctx.fillRect(Math.round(x1) - 1, Math.round(y1) - 1, 2, 2);
+      ctx.fillStyle = '#e1b66e';
+      const hx = x1 + (x2 - x1) * 0.8, hy = y1 + (y2 - y1) * 0.8;
+      ctx.fillRect(Math.round(hx) - (horiz ? 0 : 1), Math.round(hy) - (horiz ? 1 : 0), 1, 1);
+      // Marcos del vano.
+      const d = s[6] != null && D.doors ? D.doors[s[6]] : null;
+      if (d) {
+        ctx.fillStyle = C.wall;
+        if (d[0] === 'v') { ctx.fillRect(d[1] - 2, d[2] - 1, 4, 2); ctx.fillRect(d[1] - 2, d[3] - 1, 4, 2); }
+        else { ctx.fillRect(d[2] - 1, d[1] - 2, 2, 4); ctx.fillRect(d[3] - 1, d[1] - 2, 2, 4); }
+      }
+    }
+  }
+
   // ---------- API ----------
   function map(ctx, state) {
     const floor = state.floor;
@@ -827,7 +862,8 @@
       ctx.fillStyle = C.fuseEdge;
       for (let i = y + 5; i < y + h - 3; i += 6) ctx.fillRect(x + 4, i, w - 8, 2);
     }
-    for (const s of state.model.walls) line(ctx, s, C.wall, s[4]);
+    for (const s of state.model.walls) if (!s[5]) line(ctx, s, C.wall, s[4]);
+    drawDoors(ctx, state);
   }
 
   // Sprite con los pies cerca de p.y + 6 (la colisión sigue siendo el círculo de 16 u).

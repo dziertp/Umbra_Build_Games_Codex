@@ -191,6 +191,7 @@
       if (state.scene !== 'play' || (state.journal && state.journal.open)) return;
       const sw = switchInReach(state);
       if (!sw) return;
+      if (Umbra.doors && Umbra.doors.target(state) !== null) return; // la puerta tiene prioridad
       const { ox, oy } = state.view;
       const sx = Math.round(sw.x + ox);
       const sy = Math.round(sw.y + oy);
@@ -219,6 +220,7 @@
 
   // Utilidad para otros sistemas (entity.js, lighting.js).
   Umbra.power = {
+    switchInReach,
     anyLampOn(state) {
       return !!state.power && state.power.lamps.some((f) => f.some(Boolean));
     },

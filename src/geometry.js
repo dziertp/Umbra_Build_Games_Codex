@@ -14,7 +14,18 @@
     const floor = config.floor ?? 0,
       D = floors[floor],
       open = !!config.closetOpen;
-    const walls = [...D.walls, ...D.leaves];
+    // Puertas: config.doorsClosed[i] cierra D.doors[i] (su hoja D.leaves[i] pasa a cubrir el vano).
+    // Los segmentos de puerta llevan una marca extra (s[5] = 'leaf' | 'door', s[6] = índice).
+    const closedDoors = config.doorsClosed || [];
+    const walls = [...D.walls];
+    D.leaves.forEach((l, i) => {
+      if (!closedDoors[i]) walls.push([l[0], l[1], l[2], l[3], l[4], 'leaf', i]);
+    });
+    (D.doors || []).forEach((d, i) => {
+      if (!closedDoors[i]) return;
+      if (d[0] === 'v') walls.push([d[1], d[2], d[1], d[3], 3, 'door', i]);
+      else walls.push([d[2], d[1], d[3], d[1], 3, 'door', i]);
+    });
     const [x, y, w, h] = D.closet;
     walls.push([x, y, x + w, y, 3], [x, y, x, y + h, 3], [x + w, y, x + w, y + h, 3]);
     if (open) walls.push([x, y + h, x, y + h + 45, 2.4], [x + w, y + h, x + w, y + h + 45, 2.4]);

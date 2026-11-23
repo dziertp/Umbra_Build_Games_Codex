@@ -52,7 +52,7 @@
   }
 
   function rebuild() {
-    state.model = G.model({ floor: state.floor, closetOpen: state.closetOpen[state.floor] });
+    state.model = G.model({ floor: state.floor, closetOpen: state.closetOpen[state.floor], doorsClosed: state.doorsClosed && state.doorsClosed[state.floor] });
   }
 
   function tell(text, seconds = 3) {
