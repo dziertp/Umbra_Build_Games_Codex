@@ -77,13 +77,17 @@
     return (outdoorCache[floor] = (D.floors || []).filter((f) => !isRoom(f)));
   }
 
-  // Farol del campamento: polígono de lo que ilumina (recortado por muros), calculado una vez.
-  let lampPoly = null;
-  function lampPolygon(state) {
+  // Focos del campamento (faroles y luz del camión): polígono de lo que ilumina cada uno,
+  // recortado por muros. Se calculan una vez.
+  let lampPolys = null;
+  function campLights(state) {
     const b = state.G.floors[0].base;
-    if (!b || !b.lamp) return null;
-    if (!lampPoly) lampPoly = visibility(b.lamp.x, b.lamp.y, state.G.model({ floor: 0 }).walls, b.lamp.radius + 4);
-    return lampPoly;
+    if (!b || !b.lamps) return [];
+    if (!lampPolys) {
+      const walls = state.G.model({ floor: 0 }).walls;
+      lampPolys = b.lamps.map((l) => ({ l, poly: visibility(l.x, l.y, walls, l.radius + 4) }));
+    }
+    return lampPolys;
   }
 
   // Área de una habitación sin las habitaciones contenidas en ella (despensa dentro de cocina).
@@ -324,24 +328,32 @@
             c.restore();
           }
         }), CFG.moonAlpha, CFG.moon);
-        // 2b) exterior: luna general muy suave
+        // 2b) exterior: luna general en nivel tenue (afuera se ve sin linterna)
         const outside = outdoorRects(D, state.floor);
         if (outside.length) {
           applyLevel(clipped((c) => {
             for (const f of outside) c.fillRect(f[0] + ox, f[1] + oy, f[2], f[3]);
-          }), CFG.moonAlpha, CFG.moon);
+          }), CFG.dim, CFG.moon);
         }
-        // 2c) farol del campamento: luz cálida tenue, recortada por muros
-        const lamp = state.floor === 0 && D.base && D.base.lamp;
-        const lpoly = lamp && lampPolygon(state);
-        const drawLamp = (c) => {
-          polyPath(c, lpoly, ox, oy);
-          c.clip();
-          c.beginPath();
-          c.arc(lamp.x + ox, lamp.y + oy, lamp.radius, 0, Math.PI * 2);
-          c.fill();
+        // 2c) focos del campamento: tenue en todo su radio y núcleo pleno, recortados por muros
+        const camp = state.floor === 0 ? campLights(state) : [];
+        const drawCamp = (core) => (c) => {
+          for (const { l, poly } of camp) {
+            const r = core ? l.core : l.radius;
+            if (!r) continue;
+            c.save();
+            polyPath(c, poly, ox, oy);
+            c.clip();
+            c.beginPath();
+            c.arc(l.x + ox, l.y + oy, r, 0, Math.PI * 2);
+            c.fill();
+            c.restore();
+          }
         };
-        if (lpoly) applyLevel(clipped(drawLamp), CFG.dim);
+        if (camp.length) {
+          applyLevel(clipped(drawCamp(false)), CFG.dim);
+          applyLevel(clipped(drawCamp(true)), CFG.lit);
+        }
         // 3) habitaciones con la lámpara encendida: nivel tenue
         if (lamps.length) applyLevel(clipped(drawLamps), CFG.dim);
         // 4) linterna y halo
@@ -380,11 +392,9 @@
           ctx.fillStyle = CFG.lampWarm;
           drawLamps(ctx);
         }
-        if (lpoly) {
-          ctx.save();
+        if (camp.length) {
           ctx.fillStyle = CFG.lampWarm;
-          drawLamp(ctx);
-          ctx.restore();
+          drawCamp(false)(ctx);
         }
         if (torch) {
           ctx.fillStyle = CFG.warm;

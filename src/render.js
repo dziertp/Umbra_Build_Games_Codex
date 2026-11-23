@@ -518,9 +518,9 @@
       g.fillRect(ox + 2 + (i % 2) * 3, oy + 4 + i * 7, 4 - (i % 2), 1);
     }
 
-    // Farol: base, brazo y cabeza.
-    const l = b.lamp;
-    if (l) {
+    // Faroles: base, brazo y cabeza (la luz del camión no tiene poste).
+    for (const l of b.lamps || []) {
+      if (!l.pole) continue;
       const [px, py, pw, ph] = l.pole;
       g.fillStyle = C.shadow;
       g.fillRect(px + 1, py + 1, pw, ph);

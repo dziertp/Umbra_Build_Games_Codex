@@ -35,7 +35,7 @@
   function baseRects(D) {
     const b = D.base;
     if (!b) return [];
-    return [b.truck, b.board, b.objectives, b.lamp && b.lamp.pole].filter(Boolean);
+    return [b.truck, b.board, b.objectives, ...(b.lamps || []).map((l) => l.pole)].filter(Boolean);
   }
   // Fuera de la casa: un punto pisable que no está en ninguna habitación (porche, campamento, terraza).
   function outdoors(floor, x, y) {
