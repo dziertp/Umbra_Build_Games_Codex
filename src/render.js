@@ -423,11 +423,66 @@
   }
 
   // ---------- Decoración sin colisión (D.decor: [tipo, x, y, ancho, alto]) ----------
-  const FLOOR_DECOR = new Set(['runner', 'stain', 'papers', 'books', 'plant']);
+  const FLOOR_DECOR = new Set(['runner', 'stain', 'papers', 'books', 'plant', 'lawnedge', 'planter', 'bench', 'mailbox', 'crate', 'cone', 'cable', 'tripod']);
 
   function decor(g, d, rooms) {
     const [type, x, y, w, h] = d;
     const seed = Math.abs(Math.round(x * 7 + y * 13));
+    // Objetos del campamento (sin colisión).
+    if (type === 'lawnedge') {
+      g.fillStyle = '#2c3a28';
+      g.fillRect(x, y, w, h);
+      return;
+    } else if (type === 'planter') {
+      g.fillStyle = C.shadow; g.fillRect(x + 1, y + 1, w, h);
+      g.fillStyle = C.edge; g.fillRect(x, y, w, h);
+      g.fillStyle = '#5a4a3a'; g.fillRect(x + 1, y + 1, w - 2, h - 2);
+      g.fillStyle = C.leaf; g.fillRect(x + 3, y + 3, w - 6, h - 6);
+      g.fillStyle = '#4a7a3a'; g.fillRect(x + 4, y + 2, 2, 2); g.fillRect(x + w - 5, y + 4, 2, 2);
+      return;
+    } else if (type === 'bench') {
+      g.fillStyle = C.shadow; g.fillRect(x + 1, y + 1, w, h);
+      g.fillStyle = C.edge; g.fillRect(x, y, w, h);
+      g.fillStyle = C.furn; g.fillRect(x + 1, y + 1, w - 2, h - 2);
+      g.fillStyle = C.edge; g.fillRect(x + 1, y + Math.floor(h / 2), w - 2, 1);
+      return;
+    } else if (type === 'mailbox') {
+      g.fillStyle = C.pole; g.fillRect(x + 3, y + h, 2, 4);
+      g.fillStyle = C.edge; g.fillRect(x, y, w, h);
+      g.fillStyle = '#3a4a5a'; g.fillRect(x + 1, y + 1, w - 2, h - 2);
+      g.fillStyle = '#b8473a'; g.fillRect(x + w - 2, y - 2, 1, 3);
+      return;
+    } else if (type === 'crate') {
+      g.fillStyle = C.shadow; g.fillRect(x + 1, y + 1, w, h);
+      g.fillStyle = C.edge; g.fillRect(x, y, w, h);
+      g.fillStyle = '#3a4038'; g.fillRect(x + 1, y + 1, w - 2, h - 2);
+      g.fillStyle = '#c9a86a'; g.fillRect(x + 2, y + 2, 3, 1);
+      g.fillStyle = C.edge; g.fillRect(x + 1, y + Math.floor(h / 2), w - 2, 1);
+      return;
+    } else if (type === 'cone') {
+      g.fillStyle = C.shadow; g.fillRect(x - 3, y + 2, 8, 2);
+      g.fillStyle = '#d8702a'; g.fillRect(x - 3, y - 3, 7, 6);
+      g.fillStyle = '#f2efe6'; g.fillRect(x - 2, y - 1, 5, 1);
+      g.fillStyle = '#b85a20'; g.fillRect(x - 1, y - 3, 3, 1);
+      return;
+    } else if (type === 'cable') {
+      // Cable ondulado de (x, y) a (x + w, y + h).
+      g.fillStyle = '#121214';
+      const n = Math.max(Math.abs(w), Math.abs(h));
+      for (let i = 0; i <= n; i++) {
+        const k = i / n;
+        g.fillRect(Math.round(x + w * k), Math.round(y + h * k + Math.sin(k * 9) * 3), 1, 1);
+      }
+      return;
+    } else if (type === 'tripod') {
+      g.fillStyle = C.pole;
+      for (const [dx, dy] of [[-5, 4], [5, 4], [0, -5]]) {
+        for (let i = 0; i <= 5; i++) g.fillRect(x + Math.round((dx * i) / 5), y + Math.round((dy * i) / 5), 1, 1);
+      }
+      g.fillStyle = C.edge; g.fillRect(x - 2, y - 2, 4, 4);
+      g.fillStyle = C.glass; g.fillRect(x - 1, y - 1, 2, 2);
+      return;
+    }
     if (type === 'runner') {
       g.fillStyle = C.runnerBorder;
       g.fillRect(x, y, w, h);
