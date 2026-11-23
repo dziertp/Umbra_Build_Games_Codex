@@ -1,0 +1,14 @@
+{
+  "version": "V4",
+  "browser": "Chrome, managed preview",
+  "verified": [
+    "Both floor controls update state",
+    "Upward walking transfers from 1F to 2F and completes timed trial",
+    "Downward walking transfers from 2F to 1F and completes timed trial",
+    "Floor identity and active wardrobe update after transfer"
+  ],
+  "synthetic_qa": "qa-report.json",
+  "limits": [
+    "No human gameplay, hunt or lighting evaluation"
+  ]
+}

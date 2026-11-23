@@ -1,0 +1,399 @@
+{
+  "version": "V4",
+  "notice": "Synthetic checks; no human playtest measurements.",
+  "geometry": [
+    {
+      "trial": "entrada-fusibles",
+      "diameter": 16,
+      "distance": 581.9898987322332,
+      "changes": 0
+    },
+    {
+      "trial": "fusibles-armario",
+      "diameter": 16,
+      "distance": 917.6366517139593,
+      "changes": 0
+    },
+    {
+      "trial": "living-armario",
+      "diameter": 16,
+      "distance": 899.1757569573601,
+      "changes": 0
+    },
+    {
+      "trial": "dormitorio-armario",
+      "diameter": 16,
+      "distance": 388.8528137423856,
+      "changes": 0
+    },
+    {
+      "trial": "oficina-hall",
+      "diameter": 16,
+      "distance": 385.13708498984744,
+      "changes": 0
+    },
+    {
+      "trial": "circuito",
+      "diameter": 16,
+      "distance": 809.7544007200503,
+      "changes": 0
+    },
+    {
+      "trial": "subida",
+      "diameter": 16,
+      "distance": 200,
+      "changes": 1
+    },
+    {
+      "trial": "bajada",
+      "diameter": 16,
+      "distance": 204,
+      "changes": 1
+    },
+    {
+      "trial": "principal-a2",
+      "diameter": 16,
+      "distance": 827.4112549695432,
+      "changes": 0
+    },
+    {
+      "trial": "secundario-a2",
+      "diameter": 16,
+      "distance": 1104.3818177180217,
+      "changes": 0
+    },
+    {
+      "trial": "circuito-arriba",
+      "diameter": 16,
+      "distance": 802.8427124746188,
+      "changes": 0
+    },
+    {
+      "trial": "arriba-fusibles",
+      "diameter": 16,
+      "distance": 1152.7838379715727,
+      "changes": 1
+    },
+    {
+      "trial": "fusibles-a2",
+      "diameter": 16,
+      "distance": 1193.0681092190353,
+      "changes": 1
+    },
+    {
+      "trial": "entrada-fusibles",
+      "diameter": 24,
+      "distance": 589.9898987322333,
+      "changes": 0
+    },
+    {
+      "trial": "fusibles-armario",
+      "diameter": 24,
+      "distance": 931.695526217005,
+      "changes": 0
+    },
+    {
+      "trial": "living-armario",
+      "diameter": 24,
+      "distance": 932.9503602129439,
+      "changes": 0
+    },
+    {
+      "trial": "dormitorio-armario",
+      "diameter": 24,
+      "distance": 394.50966799187796,
+      "changes": 0
+    },
+    {
+      "trial": "oficina-hall",
+      "diameter": 24,
+      "distance": 400.16652224137033,
+      "changes": 0
+    },
+    {
+      "trial": "circuito",
+      "diameter": 24,
+      "distance": 815.4112549695427,
+      "changes": 0
+    },
+    {
+      "trial": "subida",
+      "diameter": 24,
+      "distance": 200,
+      "changes": 1
+    },
+    {
+      "trial": "bajada",
+      "diameter": 24,
+      "distance": 204,
+      "changes": 1
+    },
+    {
+      "trial": "principal-a2",
+      "diameter": 24,
+      "distance": 844.7838379715737,
+      "changes": 0
+    },
+    {
+      "trial": "secundario-a2",
+      "diameter": 24,
+      "distance": 1138.724963468529,
+      "changes": 0
+    },
+    {
+      "trial": "circuito-arriba",
+      "diameter": 24,
+      "distance": 809.4701294725883,
+      "changes": 0
+    },
+    {
+      "trial": "arriba-fusibles",
+      "diameter": 24,
+      "distance": 1159.8132752230958,
+      "changes": 1
+    },
+    {
+      "trial": "fusibles-a2",
+      "diameter": 24,
+      "distance": 1215.126983722081,
+      "changes": 1
+    }
+  ],
+  "interactions": [
+    {
+      "trial": "entrada-fusibles",
+      "diameter": 16,
+      "frames": 561,
+      "seconds": 8.1109708157253,
+      "floorChanges": 0,
+      "protected": false
+    },
+    {
+      "trial": "fusibles-armario",
+      "diameter": 16,
+      "frames": 874,
+      "seconds": 12.784237206092987,
+      "floorChanges": 0,
+      "protected": true
+    },
+    {
+      "trial": "living-armario",
+      "diameter": 16,
+      "frames": 846,
+      "seconds": 12.516329957741032,
+      "floorChanges": 0,
+      "protected": true
+    },
+    {
+      "trial": "dormitorio-armario",
+      "diameter": 16,
+      "frames": 381,
+      "seconds": 5.42851130197757,
+      "floorChanges": 0,
+      "protected": true
+    },
+    {
+      "trial": "oficina-hall",
+      "diameter": 16,
+      "frames": 373,
+      "seconds": 5.039213562373067,
+      "floorChanges": 0,
+      "protected": false
+    },
+    {
+      "trial": "circuito",
+      "diameter": 16,
+      "frames": 774,
+      "seconds": 11.012071102024922,
+      "floorChanges": 0,
+      "protected": false
+    },
+    {
+      "trial": "subida",
+      "diameter": 16,
+      "frames": 204,
+      "seconds": 2.79999999999991,
+      "floorChanges": 1,
+      "protected": false
+    },
+    {
+      "trial": "bajada",
+      "diameter": 16,
+      "frames": 209,
+      "seconds": 2.8726170433991602,
+      "floorChanges": 1,
+      "protected": false
+    },
+    {
+      "trial": "principal-a2",
+      "diameter": 16,
+      "frames": 790,
+      "seconds": 11.519600763465697,
+      "floorChanges": 0,
+      "protected": true
+    },
+    {
+      "trial": "secundario-a2",
+      "diameter": 16,
+      "frames": 1065,
+      "seconds": 15.36641413497233,
+      "floorChanges": 0,
+      "protected": true
+    },
+    {
+      "trial": "circuito-arriba",
+      "diameter": 16,
+      "frames": 773,
+      "seconds": 10.820841345151031,
+      "floorChanges": 0,
+      "protected": false
+    },
+    {
+      "trial": "arriba-fusibles",
+      "diameter": 16,
+      "frames": 1120,
+      "seconds": 16.066442194049444,
+      "floorChanges": 1,
+      "protected": false
+    },
+    {
+      "trial": "fusibles-a2",
+      "diameter": 16,
+      "frames": 1158,
+      "seconds": 16.637057072486318,
+      "floorChanges": 1,
+      "protected": true
+    },
+    {
+      "trial": "entrada-fusibles",
+      "diameter": 24,
+      "frames": 569,
+      "seconds": 8.222081926836415,
+      "floorChanges": 0,
+      "protected": false
+    },
+    {
+      "trial": "fusibles-armario",
+      "diameter": 24,
+      "frames": 892,
+      "seconds": 12.979499351968617,
+      "floorChanges": 0,
+      "protected": true
+    },
+    {
+      "trial": "living-armario",
+      "diameter": 24,
+      "frames": 887,
+      "seconds": 12.985421669624118,
+      "floorChanges": 0,
+      "protected": true
+    },
+    {
+      "trial": "dormitorio-armario",
+      "diameter": 24,
+      "frames": 386,
+      "seconds": 5.507078722109408,
+      "floorChanges": 0,
+      "protected": true
+    },
+    {
+      "trial": "oficina-hall",
+      "diameter": 24,
+      "frames": 390,
+      "seconds": 5.247955746421982,
+      "floorChanges": 0,
+      "protected": false
+    },
+    {
+      "trial": "circuito",
+      "diameter": 24,
+      "frames": 779,
+      "seconds": 11.090638522156768,
+      "floorChanges": 0,
+      "protected": false
+    },
+    {
+      "trial": "subida",
+      "diameter": 24,
+      "frames": 204,
+      "seconds": 2.79999999999991,
+      "floorChanges": 1,
+      "protected": false
+    },
+    {
+      "trial": "bajada",
+      "diameter": 24,
+      "frames": 209,
+      "seconds": 2.8726170433991602,
+      "floorChanges": 1,
+      "protected": false
+    },
+    {
+      "trial": "principal-a2",
+      "diameter": 24,
+      "frames": 810,
+      "seconds": 11.760886638493881,
+      "floorChanges": 0,
+      "protected": true
+    },
+    {
+      "trial": "secundario-a2",
+      "diameter": 24,
+      "frames": 1100,
+      "seconds": 15.843402270396059,
+      "floorChanges": 0,
+      "protected": true
+    },
+    {
+      "trial": "circuito-arriba",
+      "diameter": 24,
+      "frames": 777,
+      "seconds": 10.912888803456157,
+      "floorChanges": 0,
+      "protected": false
+    },
+    {
+      "trial": "arriba-fusibles",
+      "diameter": 24,
+      "frames": 1129,
+      "seconds": 16.164073266987256,
+      "floorChanges": 1,
+      "protected": false
+    },
+    {
+      "trial": "fusibles-a2",
+      "diameter": 24,
+      "frames": 1184,
+      "seconds": 16.94343032947308,
+      "floorChanges": 1,
+      "protected": true
+    },
+    {
+      "mode": "sprint",
+      "trial": "subida",
+      "diameter": 16,
+      "frames": 153,
+      "seconds": 1.97450980392153,
+      "floorChanges": 1,
+      "protected": false
+    },
+    {
+      "mode": "sprint",
+      "trial": "bajada",
+      "diameter": 16,
+      "frames": 157,
+      "seconds": 2.02772967769355,
+      "floorChanges": 1,
+      "protected": false
+    },
+    {
+      "mode": "sprint",
+      "trial": "fusibles-a2",
+      "diameter": 16,
+      "frames": 883,
+      "seconds": 11.746746168813921,
+      "floorChanges": 1,
+      "protected": true
+    }
+  ]
+}

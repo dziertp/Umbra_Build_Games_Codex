@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10151c">
+<title>Umbra · Prueba de recorridos</title>
+<meta name="description" content="Recorre ambos pisos de Mansión Umbra, conectados por la misma escalera desplazada 40 u. Comprueba puertas, refugios y tiempos.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+ <div class="brand"><svg viewBox="0 0 32 36" aria-hidden="true"><path d="M5 32V16C5 8 10 3 16 3s11 5 11 13v16M11 32V17c0-5 2-8 5-8s5 3 5 8v15M2 32h28"/></svg><div><span class="wordmark">UMBRA</span><span class="brand-sub">MANSIÓN · DOS PISOS</span></div></div>
+ <div class="top-center"><span class="tag">V4 · DOS PISOS</span><span>Prueba de recorridos</span></div>
+ <button id="help" class="quiet">Cómo probar</button>
+</header>
+<main class="workspace">
+ <section class="play-area" aria-label="Maqueta jugable de la mansión">
+  <div class="stage" id="stage">
+   <canvas id="map" tabindex="0" aria-label="Plano jugable. Muévete con WASD o flechas; usa E para interactuar con el armario y los fusibles."></canvas>
+   <div class="stage-top"><div class="floor-switch" role="group" aria-label="Piso para explorar"><button id="floor-0" class="glass" aria-pressed="true">Planta baja</button><button id="floor-1" class="glass" aria-pressed="false">Segundo piso</button></div><div class="stage-tools"><button id="fit" class="glass">Encajar mapa</button><button id="camera" class="glass" aria-pressed="false">Vista cercana</button><button id="path" class="glass" aria-pressed="false">Ruta calculada</button></div></div>
+   <div id="toast" class="toast" role="status">Pulsa Iniciar recorrido o explora con WASD.</div>
+   <div class="touch-controls" aria-label="Controles táctiles"><button data-key="ArrowUp" aria-label="Arriba">▲</button><div><button data-key="ArrowLeft" aria-label="Izquierda">◀</button><button data-key="ArrowDown" aria-label="Abajo">▼</button><button data-key="ArrowRight" aria-label="Derecha">▶</button></div><button data-key="ShiftLeft" class="interact">Mantener · Correr</button><button id="touch-e" class="interact">E · Usar</button></div>
+   <span id="map-foot" class="map-foot">1F · base V3.2 · escalera +40 u</span>
+  </div>
+  <div class="instrument-bar">
+   <div class="clock"><span class="eyebrow">TIEMPO ACTIVO</span><strong id="timer">00:00.0</strong></div>
+   <div class="run-info"><span id="run-state" class="run-state">Exploración libre</span><strong id="objective">Familiarízate con el mapa</strong><span id="distance">0 u recorridas</span></div>
+   <button id="pause" class="quiet" disabled>Pausar</button>
+   <div class="protection"><span id="closet-label" class="eyebrow">ARMARIO A1</span><strong id="protection">Fuera del refugio</strong></div>
+  </div>
+  <div class="keybar"><span><kbd>WASD</kbd> o <kbd>Flechas</kbd> Mover</span><span><kbd>Shift</kbd> Correr</span><span><kbd>E</kbd> Interactuar</span><span><kbd>Espacio</kbd> Pausar</span><span><kbd>R</kbd> Reiniciar</span></div>
+ </section>
+ <aside class="sidebar">
+  <section class="route-panel">
+   <div class="section-title"><h1>Prueba los dos pisos</h1><span id="floor-state" class="small-tag">PLANTA BAJA</span></div>
+   <label for="trial">Trayecto</label>
+   <select id="trial"></select>
+   <p id="trial-desc" class="description"></p>
+   <button id="start" class="primary">Iniciar recorrido</button>
+   <button id="free" class="text-button">Explorar sin cronómetro</button>
+   <div class="reference"><span>Referencia geométrica caminando</span><strong id="baseline">Calculando…</strong><p>Es orientativa. Incluye los peldaños caminados cuando el trayecto cruza de piso. No necesitas pasar por el centro exacto de las marcas.</p></div>
+  </section>
+  <section class="settings">
+   <h2>Proporciones de prueba</h2>
+   <div class="slider-label"><label for="diameter">Ancho de colisión</label><output id="diameter-value">16 u</output></div>
+   <input id="diameter" type="range" min="16" max="36" value="16" step="2">
+   <p class="small-note">Referencia visual mínima: 24 u. El contorno ámbar muestra la colisión.</p><div class="slider-label"><label for="speed">Velocidad al caminar</label><output id="speed-value">72 u/s</output></div>
+   <input id="speed" type="range" min="48" max="96" value="72" step="6">
+   <div class="slider-label"><label for="run-speed">Velocidad al correr</label><output id="run-speed-value">102 u/s</output></div><input id="run-speed" type="range" min="84" max="144" value="102" step="6"><p id="ratio" class="small-note">Caminar 72 u/s · correr 102 u/s.</p><p class="small-note">Mantén Shift para correr. Carrera de prueba sin stamina.</p>
+   <p class="units">u = unidades del plano; escala provisional.</p>
+   <p id="finding" class="finding fixed">Ambos pisos: escalera en x = 513 (+40 u). Paso junto al muro: 59,5 u.</p>
+  </section>
+  <section class="results">
+   <div class="section-title"><h2>Mediciones realizadas</h2><button id="export" class="quiet small" disabled>Exportar CSV</button></div>
+   <div id="history" class="history"><p class="empty">Aún no hay recorridos completados.<br>El reloj empieza al moverte.</p></div>
+   <p class="small-note">Se conservan en este navegador, junto con los parámetros de cada prueba.</p>
+  </section>
+ </aside>
+</main>
+<dialog id="guide"><button id="close-guide" class="close" aria-label="Cerrar guía">×</button><span class="eyebrow">UMBRA · VALIDACIÓN DE DOS PISOS</span><h2>Primero recorre. Después ajusta.</h2><ol><li>Elige un trayecto y pulsa <b>Iniciar recorrido</b>. El cronómetro empieza con el primer movimiento.</li><li>Muévete con <b>WASD o flechas</b> y mantén <b>Shift</b> para correr. Los muros, muebles y puertas abiertas tienen colisiones.</li><li>Para cambiar de piso, <b>recorre la escalera hasta el final</b>. Sube desde su extremo inferior en 1F y baja desde el extremo superior en 2F.</li><li>La escalera ocupa exactamente la misma posición en ambos pisos: <b>x = 513, con el desplazamiento de 40 u aplicado</b>.</li><li>En los fusibles, pulsa <b>E</b>. En los armarios <b>A1 (1F) y A2 (2F)</b>, pulsa E para abrir, entra por completo y vuelve a pulsar E para cerrar.</li></ol><p>El armario cerrado protege al personaje cuando está completamente dentro. Los botones de piso sirven para explorar cada plano. Para medir el cambio entre pisos, usa la escalera durante un recorrido. La ruta calculada es orientativa. Esta maqueta comprueba movimiento e interacción; las cacerías y la iluminación se evaluarán después.</p><button id="guide-start" class="primary">Entendido</button></dialog>
+<script src="map-data.js"></script><script src="geometry.js"></script><script src="app.js"></script>
+</body></html>
