@@ -267,6 +267,7 @@
       inv.result = {
         correct: false,
         caught: true,
+        fallback: true, // la dibuja drawResult de este archivo
         entityName: e.type.name,
         seconds: Math.floor((performance.now() - (inv.startedAt || performance.now())) / 1000),
       };
@@ -516,10 +517,10 @@
       }
       ctx.restore();
     },
-    // Pantalla de derrota de respaldo (se dibuja sobre la de ui.js si fue una captura).
+    // Pantalla de derrota de respaldo (solo si nadie manejó player:caught).
     drawResult(ctx, state) {
       const r = state.investigation && state.investigation.result;
-      if (!r || !r.caught) return;
+      if (!r || !r.fallback) return; // si ui.js manejó player:caught, su pantalla manda
       const { w, h } = state.view;
       const time = Math.floor(r.seconds / 60) + ':' + String(r.seconds % 60).padStart(2, '0');
       ctx.save();
