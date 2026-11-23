@@ -23,11 +23,18 @@ Cada PNG es una hoja conceptual de 1024 × 1024 con cuatro vistas: frente, espal
 - [La Brasa Velada](../../assets/entities/concept_sheets/brasa_velada_4_vistas.png)
 - [El Enramado](../../assets/entities/concept_sheets/enramado_4_vistas.png)
 
-## Prueba de sprite: La Pliegasombra
+## Pruebas de sprite a escala de juego
 
-Archivo: [pliegasombra_4_vistas_12x20.png](../../assets/entities/sprites/pliegasombra_4_vistas_12x20.png). Es una hoja RGBA transparente de **48 × 20 píxeles**, organizada en cuatro cuadros de **12 × 20 px**: frente, espalda, perfil izquierdo y perfil derecho. Usa una paleta corta de sombras y ojos claros, inspirada en la escala del sprite actual de la entidad en `src/entity.js`.
+Cada hoja PNG es RGBA transparente de **48 × 20 píxeles**, con cuatro cuadros de **12 × 20 px** en este orden: frente, espalda, perfil izquierdo y perfil derecho. Las formas compactas, los píxeles cuadrados y la paleta limitada siguen el estilo de los prototipos de personajes.
 
-Esta es una prueba visual de lectura a tamaño real, no está conectada todavía al juego. El siguiente paso es revisar el encaje con Dacier, responsable de la lógica y el dibujo de la entidad, antes de integrarla.
+| Entidad | Hoja de cuatro vistas |
+| --- | --- |
+| La Pliegasombra | [pliegasombra_4_vistas_12x20.png](../../assets/entities/sprites/pliegasombra_4_vistas_12x20.png) |
+| El Hilvanado | [hilvanado_4_vistas_12x20.png](../../assets/entities/sprites/hilvanado_4_vistas_12x20.png) |
+| La Brasa Velada | [brasa_velada_4_vistas_12x20.png](../../assets/entities/sprites/brasa_velada_4_vistas_12x20.png) |
+| El Enramado | [enramado_4_vistas_12x20.png](../../assets/entities/sprites/enramado_4_vistas_12x20.png) |
+
+Son pruebas visuales de lectura a tamaño real; todavía no están conectadas al juego. La integración debe coordinarse con Dacier, responsable de la lógica y el dibujo de la entidad.
 
 ## Datos del juego
 
