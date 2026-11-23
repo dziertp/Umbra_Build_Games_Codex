@@ -9,6 +9,7 @@
   'use strict';
 
   const TABS = ['ENTIDADES', 'EQUIPO', 'PRUEBAS', 'CONTROLES', 'AJUSTES'];
+  const CONTROLS_TAB = TABS.indexOf('CONTROLES');
   const MOVEMENT_CONTROLS = [
     ['WASD / Flechas', 'Moverse'],
     ['Shift', 'Correr'],
@@ -705,6 +706,15 @@
         event.preventDefault();
         return true;
       }
+      if (event.code === 'KeyK') {
+        if (event.repeat || (j.open && j.mode !== 'book')) return true;
+        if (j.open && j.tab === CONTROLS_TAB) closePanel(j);
+        else {
+          if (!j.open) openPanel(state, 'book');
+          setTab(j, CONTROLS_TAB);
+        }
+        return true;
+      }
       if (event.code === 'Tab' || event.code === 'KeyJ') {
         event.preventDefault();
         if (!event.repeat) {
@@ -807,11 +817,10 @@
       }
       ctx.textAlign = 'center';
       const footer = j.tab === 4 ? '↑/↓ elegir · ←/→ o clic ajustar · Q/E pestaña · Esc cerrar'
+        : j.tab === CONTROLS_TAB ? 'Q/E o clic: cambiar pestaña · K o Esc: cerrar'
         : 'Q/E pestaña · Flechas · Enter marcar/elegir · Clic · Tab/J cerrar';
-      ctx.font = '8px monospace';
-      const width = Math.ceil(ctx.measureText(footer).width) + 10;
-      ctx.fillStyle = 'rgba(7,9,12,.85)';
-      ctx.fillRect((state.view.w - width) / 2, state.view.h - 15, width, 13);
+      ctx.fillStyle = '#07090c';
+      ctx.fillRect(0, state.view.h - 15, state.view.w, 15);
       text(ctx, footer, state.view.w / 2, state.view.h - 5, C.hint, '8px monospace');
       ctx.restore();
     },

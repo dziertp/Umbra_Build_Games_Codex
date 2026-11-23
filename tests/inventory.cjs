@@ -132,6 +132,13 @@ journal.onClick(131, 64, state);
 assert.equal(U.audio.volume('master'), 50);
 journal.onClick(437, 10, state);
 assert.equal(state.journal.open, false);
+press('KeyK');
+assert.equal(state.journal.mode, 'book');
+assert.equal(state.journal.tab, 3);
+press('KeyK', true);
+assert.equal(state.journal.open, true);
+press('KeyK');
+assert.equal(state.journal.open, false);
 
 // Ejecuta el cambio de piso a través del bucle real sin dibujar el mapa.
 const drawSwitchHint = U.systems.find(system => system.order === 8).drawUI;
