@@ -11,6 +11,7 @@
     roam: 40,           // margen alrededor de la habitación favorita
     pause: [1, 4],      // segundos de espera entre paseos
     eventEvery: [20, 40],
+    cutEvery: [45, 90],  // cada cuánto intenta cortar la luz (si hay alguna encendida)
     excluded: ['Vestíbulo', 'Hall'],
   };
 
@@ -105,7 +106,7 @@
       const rooms = state.G.floors.flatMap((D, floor) =>
         D.rooms.filter((r) => !CFG.excluded.includes(r[0])).map((room) => ({ floor, room })));
       const { floor, room } = pick(rooms);
-      const e = { type: pick(types), floor, room, x: 0, y: 0, mode: 'idle', path: null, step: 0, wait: rand(...CFG.pause), nextEvent: rand(...CFG.eventEvery) };
+      const e = { type: pick(types), floor, room, x: 0, y: 0, mode: 'idle', path: null, step: 0, wait: rand(...CFG.pause), nextEvent: rand(...CFG.eventEvery), nextCut: rand(...CFG.cutEvery) };
       Object.assign(e, placeInRoom(state, e));
       state.entity = e; // reemplaza cualquier entidad provisional de otro sistema
     },
@@ -149,6 +150,16 @@
       if ((e.nextEvent -= dt) <= 0) {
         subtleEvent(state, e);
         e.nextEvent = rand(...CFG.eventEvery);
+      }
+
+      // Apagón provocado por la entidad.
+      if ((e.nextCut -= dt) <= 0) {
+        e.nextCut = rand(...CFG.cutEvery);
+        if (state.power && state.power.on && Umbra.power.anyLampOn(state)) {
+          Umbra.emit('power:off');
+          Umbra.emit('entity:event', { kind: 'power', text: 'Se cortó la luz.', floor: e.floor, room: e.room, x: e.x, y: e.y });
+          Umbra.tell('Se cortó la luz.', 3);
+        }
       }
     },
     drawUI(ctx, state) {

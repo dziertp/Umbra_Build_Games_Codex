@@ -18,7 +18,7 @@
   const ctx = buffer.getContext('2d');
 
   const state = {
-    scene: 'menu', // menu | play
+    scene: 'menu', // menu | play | result
     floor: 0,
     closetOpen: [false, false],
     player: { x: 0, y: 0, facing: 0 },
@@ -89,7 +89,7 @@
       return;
     }
     if (D.fuse && nearRect(D.fuse, 30)) {
-      tell('Caja de fusibles. (El apagón todavía no está implementado.)');
+      Umbra.emit('power:on'); // power.js restablece la luz y avisa
     }
   }
 
@@ -97,25 +97,33 @@
   addEventListener('keydown', (e) => {
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
     if (state.scene === 'menu') {
-      if (e.code === 'Enter' || e.code === 'Space') startGame();
+      if (!e.repeat && (e.code === 'Enter' || e.code === 'Space')) startGame();
       return;
     }
     for (const sys of Umbra.systems) {
       if (sys.onKey && sys.onKey(e, state) === true) return;
     }
+    if (state.scene !== 'play') return;
     if (e.code === 'KeyE' && !e.repeat) interact();
     if (e.code === 'Escape') state.scene = 'menu';
     state.keys.add(e.code);
   });
   addEventListener('keyup', (e) => state.keys.delete(e.code));
   addEventListener('blur', () => state.keys.clear());
-  screen.addEventListener('click', () => {
-    if (state.scene === 'menu') startGame();
+  screen.addEventListener('click', (e) => {
+    if (state.scene === 'menu') {
+      startGame();
+    } else if (state.scene === 'play') {
+      const bounds = screen.getBoundingClientRect();
+      const x = (e.clientX - bounds.left) * VIEW_W / bounds.width;
+      const y = (e.clientY - bounds.top) * VIEW_H / bounds.height;
+      Umbra.call('onClick', x, y, state);
+    }
   });
 
   // ---------- Actualización ----------
   function update(dt) {
-    if (state.scene !== 'play') return;
+    if (state.scene !== 'play' || state.journal?.open) return;
     Umbra.call('update', dt, state);
     const k = state.keys;
     let dx = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
@@ -211,6 +219,7 @@
       ctx.textAlign = 'center';
       ctx.fillText(state.message, VIEW_W / 2, VIEW_H - 8);
     }
+    Umbra.call('drawOverlay', ctx, state);
   }
 
   function drawMenu() {
@@ -225,8 +234,9 @@
     ctx.fillText('Identifica a la entidad antes de que te encuentre.', VIEW_W / 2, 125);
     ctx.fillText('WASD / flechas: moverse · Shift: correr', VIEW_W / 2, 170);
     ctx.fillText('E: interactuar · L: linterna · Esc: menú', VIEW_W / 2, 183);
+    ctx.fillText('Tab: diario', VIEW_W / 2, 196);
     ctx.fillStyle = C.fuse;
-    ctx.fillText('Pulsa Enter o haz clic para comenzar', VIEW_W / 2, 205);
+    ctx.fillText('Pulsa Enter o haz clic para comenzar', VIEW_W / 2, 219);
     // Los ojos en la oscuridad.
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(VIEW_W / 2 - 9, 145, 6, 2);
@@ -249,6 +259,7 @@
     last = now;
     update(dt);
     if (state.scene === 'play') drawWorld();
+    else if (state.scene === 'result') Umbra.call('drawResult', ctx, state);
     else drawMenu();
     sctx.imageSmoothingEnabled = false;
     sctx.drawImage(buffer, 0, 0, screen.width, screen.height);

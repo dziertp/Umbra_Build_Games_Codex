@@ -2,7 +2,8 @@
 // Calcula un polígono de visibilidad desde el jugador lanzando rayos contra los
 // muros (state.model.walls), y dibuja la oscuridad por niveles discretos:
 //   fuera de la vista: negro total · dentro de la vista: penumbra casi negra
-//   borde de linterna / halo: luz tenue · centro de linterna / halo: luz plena
+//   borde de linterna / halo y habitaciones con lámpara: luz tenue · centro de linterna / halo: luz plena
+//   (la luna de las ventanas es penumbra teñida de azul; los muros a la vista se aclaran un poco)
 // Tecla L: encender o apagar la linterna.
 (function () {
   'use strict';
@@ -22,7 +23,62 @@
     dim: 0.55,
     lit: 0,
     warm: 'rgba(225,182,110,0.07)', // tinte cálido tenue dentro de la linterna
+    lampWarm: 'rgba(225,182,110,0.05)', // tinte de las habitaciones encendidas
+    // Luz de luna: penumbra teñida de azul (misma familia que 'ambient', no un nivel nuevo).
+    moon: '#0a1624',
+    moonAlpha: 0.9,
+    moonDepth: 70,
+    moonSpread: 10,
+    wallBoost: 0.3, // los muros a la vista quitan un 30 % de la oscuridad que tengan
   };
+
+  // Franjas de luna por piso: trapecio desde cada ventana hacia dentro, recortado a su habitación.
+  const moonCache = [];
+  function moonStrips(D, floor) {
+    if (moonCache[floor]) return moonCache[floor];
+    const inRoom = (x, y) => {
+      let best = null;
+      for (const r of D.rooms) {
+        if (x >= r[1] && x < r[1] + r[3] && y >= r[2] && y < r[2] + r[4] && (!best || r[3] * r[4] < best[3] * best[4])) best = r;
+      }
+      return best;
+    };
+    const strips = [];
+    for (const [x1, y1, x2, y2] of D.windows || []) {
+      const len = Math.hypot(x2 - x1, y2 - y1) || 1;
+      const tx = (x2 - x1) / len, ty = (y2 - y1) / len;
+      let nx = -ty, ny = tx;
+      const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+      let room = inRoom(mx + nx * 6, my + ny * 6);
+      if (!room) {
+        nx = -nx; ny = -ny;
+        room = inRoom(mx + nx * 6, my + ny * 6);
+      }
+      if (!room) continue;
+      const dd = CFG.moonDepth, sp = CFG.moonSpread;
+      strips.push({
+        room,
+        quad: [
+          x1, y1,
+          x2, y2,
+          x2 + nx * dd + tx * sp, y2 + ny * dd + ty * sp,
+          x1 + nx * dd - tx * sp, y1 + ny * dd - ty * sp,
+        ],
+      });
+    }
+    return (moonCache[floor] = strips);
+  }
+
+  // Área de una habitación sin las habitaciones contenidas en ella (despensa dentro de cocina).
+  function roomPath(c, r, rooms, ox, oy) {
+    c.beginPath();
+    c.rect(r[1] + ox, r[2] + oy, r[3], r[4]);
+    for (const o of rooms) {
+      if (o !== r && o[1] >= r[1] && o[2] >= r[2] && o[1] + o[3] <= r[1] + r[3] && o[2] + o[4] <= r[2] + r[4]) {
+        c.rect(o[1] + ox, o[2] + oy, o[3], o[4]);
+      }
+    }
+  }
 
   const light = { on: true, poly: [] };
 
@@ -117,7 +173,7 @@
   }
 
   // Aplica un nivel: donde la máscara está pintada, la oscuridad pasa a `alpha`.
-  function applyLevel(drawShapes, alpha) {
+  function applyLevel(drawShapes, alpha, color = CFG.dark) {
     const m = mask.getContext('2d');
     m.globalCompositeOperation = 'source-over';
     m.clearRect(0, 0, mask.width, mask.height);
@@ -132,7 +188,7 @@
     if (alpha > 0) {
       m.globalCompositeOperation = 'source-in';
       m.globalAlpha = alpha;
-      m.fillStyle = CFG.dark;
+      m.fillStyle = color;
       m.fillRect(0, 0, mask.width, mask.height);
       m.globalAlpha = 1;
       d.globalCompositeOperation = 'source-over';
@@ -181,17 +237,74 @@
           c.clip();
           draw(c);
         };
+        const D = state.G.floors[state.floor];
+        const lamps = Umbra.power ? Umbra.power.litRooms(state, state.floor) : [];
+        const drawLamps = (c) => {
+          for (const r of lamps) {
+            roomPath(c, r, D.rooms, ox, oy);
+            c.fill('evenodd');
+          }
+        };
+        // 1) penumbra en todo lo visible
         applyLevel(clipped((c) => c.fill()), CFG.ambient);
+        // 2) luna: penumbra azul junto a las ventanas
+        applyLevel(clipped((c) => {
+          for (const s of moonStrips(D, state.floor)) {
+            c.save();
+            c.beginPath();
+            c.rect(s.room[1] + ox, s.room[2] + oy, s.room[3], s.room[4]);
+            c.clip();
+            c.beginPath();
+            c.moveTo(s.quad[0] + ox, s.quad[1] + oy);
+            for (let i = 2; i < 8; i += 2) c.lineTo(s.quad[i] + ox, s.quad[i + 1] + oy);
+            c.closePath();
+            c.fill();
+            c.restore();
+          }
+        }), CFG.moonAlpha, CFG.moon);
+        // 3) habitaciones con la lámpara encendida: nivel tenue
+        if (lamps.length) applyLevel(clipped(drawLamps), CFG.dim);
+        // 4) linterna y halo
         applyLevel(clipped((c) => shapes(c, x, y, p.facing, CFG.halo, CFG.cone, CFG.reach)), CFG.dim);
         applyLevel(clipped((c) => shapes(c, x, y, p.facing, CFG.haloInner, CFG.coneInner, CFG.reachInner)), CFG.lit);
+        // 5) muros e interruptores a la vista: algo más claros para orientarse sin linterna
+        const m = mask.getContext('2d');
+        m.globalCompositeOperation = 'source-over';
+        m.clearRect(0, 0, w, h);
+        m.save();
+        polyPath(m, poly, ox, oy);
+        m.clip();
+        m.strokeStyle = '#fff';
+        m.fillStyle = '#fff';
+        for (const s of state.model.walls) {
+          m.lineWidth = s[4];
+          m.beginPath();
+          m.moveTo(s[0] + ox, s[1] + oy);
+          m.lineTo(s[2] + ox, s[3] + oy);
+          m.stroke();
+        }
+        if (state.power) {
+          for (const sw of state.power.switches[state.floor]) m.fillRect(Math.round(sw.x + ox) - 1, Math.round(sw.y + oy) - 1, 3, 3);
+        }
+        m.restore();
+        d.globalCompositeOperation = 'destination-out';
+        d.globalAlpha = CFG.wallBoost;
+        d.drawImage(mask, 0, 0);
+        d.globalAlpha = 1;
+        d.globalCompositeOperation = 'source-over';
+
+        ctx.save();
+        polyPath(ctx, poly, ox, oy);
+        ctx.clip();
+        if (lamps.length) {
+          ctx.fillStyle = CFG.lampWarm;
+          drawLamps(ctx);
+        }
         if (light.on) {
-          ctx.save();
-          polyPath(ctx, poly, ox, oy);
-          ctx.clip();
           ctx.fillStyle = CFG.warm;
           shapes(ctx, x, y, p.facing, 0, CFG.cone, CFG.reach);
-          ctx.restore();
         }
+        ctx.restore();
       }
       ctx.drawImage(dark, 0, 0);
     },
