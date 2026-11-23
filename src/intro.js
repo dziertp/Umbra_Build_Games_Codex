@@ -226,6 +226,9 @@
         tip('switch', 'Busca los interruptores junto a las puertas para encender la luz.');
       }
       if (state.stamina && state.stamina.value < 0.3) tip('stamina', 'Correr te cansa. Camina para recuperarte.');
+      // Cuando falta exactamente un objetivo.
+      const objs = Umbra.investigation && Umbra.investigation.objectives ? Umbra.investigation.objectives(state) : [];
+      if (objs.length && objs.filter((o) => !o.done).length === 1) tip('una-mision', 'Queda una pura misión.');
       // Primera vez que equipa cada herramienta (o toma la linterna): su uso.
       const held = equipped(state);
       if (held && held.hint) tip('hint:' + held.id, held.hint);

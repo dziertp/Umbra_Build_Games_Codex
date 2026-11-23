@@ -568,6 +568,7 @@
       text(ctx, label, 82, y + 11, '#262b2b', '12px monospace');
     });
     text(ctx, objectives.filter(item => item.done).length + '/3 completados', 56, 208, '#4f564e', 'bold 10px monospace');
+    if (objectives.filter(item => !item.done).length === 1) text(ctx, 'Queda una pura misión', 200, 208, '#7c2b22', 'bold 10px monospace');
     text(ctx, 'Esc · Volver', 37, 246, '#ded7c7', '9px monospace');
   }
 
