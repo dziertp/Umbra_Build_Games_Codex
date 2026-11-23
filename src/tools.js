@@ -76,7 +76,7 @@
       ctx.fillText(reading || 'Sin lectura', 15, y + 23, 158);
       ctx.fillStyle = '#aaa095';
       ctx.font = '8px monospace';
-      ctx.fillText('1/2/3  Equipar    F  Usar', 15, y + 32, 158);
+      ctx.fillText('1-8  Equipar    F  Usar', 15, y + 32, 158);
       ctx.restore();
     },
   });
