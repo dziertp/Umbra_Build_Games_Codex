@@ -396,15 +396,81 @@
     for (const [ex, ey, w] of EYES[dir]) ctx.fillRect(x + ex, y + ey, w, 1);
   }
 
+  // ---------- Nombre de la habitación ----------
+  // Al entrar a otra habitación, su nombre aparece abajo a la derecha ~2 s, con fundido
+  // en 4 pasos (sin degradado suave). Queda sobre la franja de mensajes y lejos del panel
+  // de herramientas (abajo a la izquierda).
+  const ROOM_LABEL = { fadeIn: 0.3, hold: 1.6, fadeOut: 0.4 };
+  const roomLabel = { key: null, name: '', t: Infinity };
+
+  function roomAtPlayer(state) {
+    const p = state.player;
+    let best = null;
+    for (const r of state.G.floors[state.floor].rooms) {
+      if (p.x >= r[1] && p.x < r[1] + r[3] && p.y >= r[2] && p.y < r[2] + r[4] && (!best || r[3] * r[4] < best[3] * best[4])) best = r;
+    }
+    return best;
+  }
+
+  function updateRoomLabel(dt, state) {
+    const r = roomAtPlayer(state);
+    const key = r ? state.floor + ':' + r[0] : roomLabel.key;
+    if (r && key !== roomLabel.key) {
+      roomLabel.key = key;
+      roomLabel.name = r[0];
+      roomLabel.t = 0;
+    } else {
+      roomLabel.t += dt;
+    }
+  }
+
+  function drawRoomLabel(ctx, state) {
+    const { fadeIn, hold, fadeOut } = ROOM_LABEL;
+    const t = roomLabel.t;
+    if (t >= fadeIn + hold + fadeOut || !roomLabel.name) return;
+    let a = t < fadeIn ? t / fadeIn : t < fadeIn + hold ? 1 : 1 - (t - fadeIn - hold) / fadeOut;
+    a = Math.ceil(a * 4) / 4; // 4 niveles
+    if (a <= 0) return;
+    const { w, h } = state.view;
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.font = 'bold 9px monospace';
+    const label = roomLabel.name.toUpperCase();
+    const tw = Math.ceil(ctx.measureText(label).width);
+    const bw = tw + 20;
+    const bx = w - bw - 6;
+    const by = h - 41;
+    ctx.fillStyle = '#07090c';
+    ctx.fillRect(bx, by, bw, 15);
+    ctx.fillStyle = '#3a3328';
+    ctx.fillRect(bx, by, bw, 1);
+    ctx.fillRect(bx, by + 14, bw, 1);
+    ctx.fillStyle = '#e1b66e';
+    ctx.fillRect(bx + 4, by + 7, 3, 1);
+    ctx.fillRect(bx + bw - 7, by + 7, 3, 1);
+    ctx.fillStyle = '#d8d2c4';
+    ctx.textAlign = 'left';
+    ctx.fillText(label, bx + 10, by + 11);
+    ctx.restore();
+  }
+
   Umbra.render = { map, player, sprite: spriteCanvas };
 
   Umbra.register({
     order: 6, // después de lighting.js (5): los ojos van sobre la oscuridad
     start() {
       floorCache.length = 0;
+      roomLabel.key = null;
+      roomLabel.t = Infinity;
+    },
+    update(dt, state) {
+      updateRoomLabel(dt, state);
     },
     drawLight(ctx, state) {
       eyes(ctx, state);
+    },
+    drawUI(ctx, state) {
+      drawRoomLabel(ctx, state);
     },
   });
 })();
