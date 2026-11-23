@@ -803,7 +803,60 @@
     ctx.restore();
   }
 
-  Umbra.render = { map, player, sprite: spriteCanvas };
+  // ---------- HUD: retrato del investigador y herramienta en la mano ----------
+  // Arriba a la izquierda (lejos del panel de lectura y del inventario, abajo).
+  const hud = { t: 0, alertUntil: -1, reliefUntil: -1 };
+  Umbra.on('entity:event', () => { hud.alertUntil = hud.t + 3; });
+  Umbra.on('hunt:end', (d) => { if (!d || !d.caught) hud.reliefUntil = hud.t + 3; });
+
+  function playerHidden(state) {
+    const c = state.G.floors[state.floor].closet;
+    const p = state.player;
+    return !!c && !state.closetOpen[state.floor] && p.x > c[0] && p.x < c[0] + c[2] && p.y > c[1] && p.y < c[1] + c[3];
+  }
+
+  function mood(state) {
+    const e = state.entity;
+    const hunting = e && (e.mode === 'hunt' || e.mode === 'warn');
+    const hidden = playerHidden(state);
+    if (hunting && !hidden) return 'scared';
+    if (hidden || hud.t < hud.reliefUntil) return 'relief';
+    if (Umbra.lighting && Umbra.lighting.playerInDarkness && Umbra.lighting.playerInDarkness(state)) return 'dark';
+    if (state.stamina && state.stamina.value < 0.3) return 'tired';
+    if (hud.t < hud.alertUntil) return 'alert';
+    return 'calm';
+  }
+
+  function frame(ctx, x, y, w, h) {
+    ctx.fillStyle = '#07090c';
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = '#3a3328';
+    ctx.fillRect(x, y, w, 1);
+    ctx.fillRect(x, y + h - 1, w, 1);
+    ctx.fillRect(x, y, 1, h);
+    ctx.fillRect(x + w - 1, y, 1, h);
+    ctx.fillStyle = '#e1b66e';
+    ctx.fillRect(x, y, 2, 1);
+    ctx.fillRect(x, y, 1, 2);
+    ctx.fillRect(x + w - 2, y + h - 1, 2, 1);
+    ctx.fillRect(x + w - 1, y + h - 2, 1, 2);
+  }
+
+  function drawHud(ctx, state) {
+    if (!Umbra.art || state.scene !== 'play') return;
+    frame(ctx, 4, 4, 36, 36);
+    Umbra.art.portrait(ctx, 6, 6, mood(state), hud.t);
+    frame(ctx, 42, 4, 36, 36);
+    const tools = state.tools;
+    const held = tools && tools.slots && tools.selected >= 0 ? tools.slots[tools.selected] : null;
+    if (held) Umbra.art.tool(ctx, held.id, 44, 6, 2);
+    else {
+      ctx.fillStyle = '#3a3328';
+      ctx.fillRect(56, 21, 8, 1); // mano vacía
+    }
+  }
+
+  Umbra.render = { map, player, sprite: spriteCanvas, mood };
 
   Umbra.register({
     order: 6, // después de lighting.js (5): los ojos van sobre la oscuridad
@@ -811,8 +864,11 @@
       floorCache.length = 0;
       roomLabel.key = null;
       roomLabel.t = Infinity;
+      hud.alertUntil = -1;
+      hud.reliefUntil = -1;
     },
     update(dt, state) {
+      hud.t += dt;
       updateRoomLabel(dt, state);
     },
     drawLight(ctx, state) {
@@ -820,6 +876,7 @@
     },
     drawUI(ctx, state) {
       drawRoomLabel(ctx, state);
+      drawHud(ctx, state);
     },
   });
 })();

@@ -567,9 +567,9 @@
       ctx.fillText(
         'DEBUG · ' + e.type.name + ' · ' + e.mode + ' · ' + timer + ' · fav: ' + e.room[0] + ' (piso ' + e.homeFloor + ')' +
         ' · en: ' + (where ? where[0] : '—') + ' (piso ' + e.floor + ')',
-        4, 10, state.view.w - 8);
+        84, 10, state.view.w - 88);
       const t = Object.keys(traits(e)).filter((k) => traits(e)[k]).map((k) => k + (traits(e)[k] === true ? '' : '=' + traits(e)[k]));
-      ctx.fillText('evidencias: ' + e.type.evidence.join(', ') + (t.length ? ' · traits: ' + t.join(', ') : '') + ' · H: forzar cacería', 4, 20, state.view.w - 8);
+      ctx.fillText('evidencias: ' + e.type.evidence.join(', ') + (t.length ? ' · traits: ' + t.join(', ') : '') + ' · H: forzar cacería', 84, 20, state.view.w - 88);
       if (e.floor === state.floor) {
         if (e.mode === 'idle') {
           const [, rx, ry, rw, rh] = e.room;
