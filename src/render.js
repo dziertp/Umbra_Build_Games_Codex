@@ -440,7 +440,7 @@
   }
 
   // ---------- Decoración sin colisión (D.decor: [tipo, x, y, ancho, alto]) ----------
-  const FLOOR_DECOR = new Set(['runner', 'stain', 'papers', 'books', 'plant', 'lawnedge', 'planter', 'bench', 'mailbox', 'crate', 'cone', 'cable', 'tripod', 'newspaper']);
+  const FLOOR_DECOR = new Set(['runner', 'stain', 'papers', 'books', 'plant', 'lawnedge', 'planter', 'bench', 'mailbox', 'crate', 'cone', 'cable', 'tripod', 'newspaper', 'nightstand', 'tvshelf', 'candelabra']);
 
   function decor(g, d, rooms) {
     const [type, x, y, w, h] = d;
@@ -469,6 +469,32 @@
       g.fillStyle = '#3a4a5a'; g.fillRect(x, y, w, h);
       g.fillStyle = '#b8473a'; g.fillRect(x + w, y - 3, 1, 3);
       pixText(g, '23', x + 1, y + Math.floor((h - 5) / 2), '#f2efe6'); // número 23
+      return;
+    } else if (type === 'nightstand') {
+      g.fillStyle = C.shadow; g.fillRect(x + 1, y + 1, w, h);
+      g.fillStyle = C.edge; g.fillRect(x, y, w, h);
+      g.fillStyle = C.furn; g.fillRect(x + 1, y + 1, w - 2, h - 2);
+      g.fillStyle = C.tape; g.fillRect(x + 4, y + 4, w - 8, h - 8); // pantalla de la lamparita
+      g.fillStyle = C.pot; g.fillRect(x + Math.floor(w / 2) - 1, y + Math.floor(h / 2) - 1, 2, 2);
+      return;
+    } else if (type === 'tvshelf') {
+      // Repisa con televisor antiguo (pantalla curva, antena).
+      g.fillStyle = C.shadow; g.fillRect(x + 1, y + 1, w, h);
+      g.fillStyle = C.edge; g.fillRect(x, y, w, h);
+      g.fillStyle = C.furn; g.fillRect(x + 1, y + 1, w - 2, h - 2);
+      const tx = x + Math.floor(w / 2) - 9;
+      g.fillStyle = C.edge; g.fillRect(tx - 1, y + 1, 20, h - 2);
+      g.fillStyle = '#4a4a50'; g.fillRect(tx, y + 2, 18, h - 4);
+      g.fillStyle = '#26323a'; g.fillRect(tx + 2, y + 3, 11, h - 6);
+      g.fillStyle = '#5a7a8a'; g.fillRect(tx + 3, y + 4, 2, 1);
+      g.fillStyle = '#8a8a90'; g.fillRect(tx + 15, y + 4, 1, 1); g.fillRect(tx + 15, y + 7, 1, 1);
+      g.fillStyle = C.pole; g.fillRect(tx + 5, y - 2, 1, 3); g.fillRect(tx + 12, y - 3, 1, 4);
+      return;
+    } else if (type === 'candelabra') {
+      // Candelabro de tres velas.
+      g.fillStyle = '#7a6430'; g.fillRect(x - 5, y + 1, 11, 2); g.fillRect(x, y - 1, 1, 3);
+      g.fillStyle = '#e8e0c8'; g.fillRect(x - 5, y - 3, 1, 4); g.fillRect(x, y - 5, 1, 4); g.fillRect(x + 5, y - 3, 1, 4);
+      g.fillStyle = '#f2d36a'; g.fillRect(x - 5, y - 4, 1, 1); g.fillRect(x, y - 6, 1, 1); g.fillRect(x + 5, y - 4, 1, 1);
       return;
     } else if (type === 'newspaper') {
       // Diario viejo con titular legible.
