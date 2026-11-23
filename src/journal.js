@@ -303,11 +303,26 @@
         ctx.fillStyle = C.red;
         ctx.fillRect(cx + 2, cy + 6, tw + 2, 1);
       }
-      hit(j, cx, cy, cw - 2, GRID.row - 1, () => {
+      if (j.struck && j.struck.has(e.id)) {
+        // Descarte manual del jugador: línea amarilla (distinta del tachado rojo automático).
+        const tw = Math.min(cw - 7, ctx.measureText(e.name).width);
+        ctx.fillStyle = '#d8b030';
+        ctx.fillRect(cx + 2, cy + 5, tw + 2, 2);
+      }
+      const h = { x: cx, y: cy, w: cw - 2, h: GRID.row - 1 };
+      // Clic izquierdo: tachar/destachar. Clic derecho: elegir como respuesta.
+      h.fn = () => {
         j.entitySel = i;
         j.focus = opts.focusIndex;
-        if (opts.answer) j.answer = j.answer === e.id ? null : e.id;
-      });
+        if (j.struck.has(e.id)) j.struck.delete(e.id);
+        else j.struck.add(e.id);
+      };
+      h.rfn = () => {
+        j.entitySel = i;
+        j.focus = opts.focusIndex;
+        j.answer = j.answer === e.id ? null : e.id;
+      };
+      j.hits.push(h);
     }
     if (pages > 1) {
       const y = top + rows * GRID.row + 9;
@@ -618,7 +633,7 @@
     const answer = data().entities.find((e) => e.id === j.answer);
     const by = BOOK.y + BOOK.h - 26;
     text(ctx, 'Posibles: ' + left + ' de ' + data().entities.length, RIGHT.x, by, C.inkSoft, '8px monospace');
-    text(ctx, answer ? 'Respuesta: ' + answer.name + '. Regresa al camión.' : 'Elige tu respuesta con Enter o clic.',
+    text(ctx, answer ? 'Respuesta: ' + answer.name + '. Regresa al camión.' : 'Elige tu respuesta: Enter o clic derecho.',
       RIGHT.x, by + 10, answer ? C.red : C.inkSoft, answer ? 'bold 8px monospace' : '8px monospace', RIGHT.w);
   }
 
@@ -662,6 +677,11 @@
   }
 
   function activate(j) {
+    if (j.tab === 0) {
+      const e = data().entities[j.entitySel];
+      if (e) j.answer = j.answer === e.id ? null : e.id;
+      return;
+    }
     if (j.tab !== 2) return;
     if (j.focus === 0) {
       const ev = data().evidence[j.evSel];
@@ -670,6 +690,27 @@
       const e = data().entities[j.entitySel];
       if (e) j.answer = j.answer === e.id ? null : e.id;
     }
+  }
+
+  // Clic derecho en el diario: elige la entidad bajo el cursor como respuesta.
+  const canvasEl = document.getElementById('game');
+  if (canvasEl) {
+    canvasEl.addEventListener('contextmenu', (ev) => {
+      const state = Umbra.state;
+      const j = state && state.journal;
+      if (!j || !j.open || state.scene !== 'play') return;
+      ev.preventDefault();
+      const b = canvasEl.getBoundingClientRect();
+      const x = ((ev.clientX - b.left) * state.view.w) / b.width;
+      const y = ((ev.clientY - b.top) * state.view.h) / b.height;
+      for (let i = j.hits.length - 1; i >= 0; i--) {
+        const h = j.hits[i];
+        if (x >= h.x && x < h.x + h.w && y >= h.y && y < h.y + h.h) {
+          if (h.rfn) h.rfn();
+          return;
+        }
+      }
+    });
   }
 
   Umbra.on('evidence:found', ({ id }, state) => {
@@ -696,6 +737,7 @@
         marks: {},     // id de evidencia → 1 confirmada, 2 descartada
         detected: new Set(),
         answer: null,  // id de la entidad elegida (lo lee ui.js)
+        struck: new Set(), // entidades tachadas a mano (amarillo); se reinicia cada partida
         hits: [],
       };
     },
@@ -818,7 +860,7 @@
       ctx.textAlign = 'center';
       const footer = j.tab === 4 ? '↑/↓ elegir · ←/→ o clic ajustar · Q/E pestaña · Esc cerrar'
         : j.tab === CONTROLS_TAB ? 'Q/E o clic: cambiar pestaña · K o Esc: cerrar'
-        : 'Q/E pestaña · Flechas · Enter marcar/elegir · Clic · Tab/J cerrar';
+        : 'Clic: tachar · Enter / clic derecho: elegir respuesta · Q/E pestaña · Tab/J cerrar';
       ctx.fillStyle = '#07090c';
       ctx.fillRect(0, state.view.h - 15, state.view.w, 15);
       text(ctx, footer, state.view.w / 2, state.view.h - 5, C.hint, '8px monospace');
