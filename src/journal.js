@@ -1,4 +1,4 @@
-// Umbra — diario de investigación: un libro de dos páginas con tres pestañas.
+// Umbra — diario de investigación y paneles del campamento.
 //   ENTIDADES: grilla de nombres (paginada) + ficha de la entidad.
 //   EQUIPO:    herramientas con su tecla + ficha y evidencia que detecta.
 //   PRUEBAS:   8 evidencias (sin marcar → confirmada → descartada) + qué entidades encajan.
@@ -8,7 +8,7 @@
 (function () {
   'use strict';
 
-  const TABS = ['ENTIDADES', 'EQUIPO', 'PRUEBAS', 'CONTROLES'];
+  const TABS = ['ENTIDADES', 'EQUIPO', 'PRUEBAS', 'CONTROLES', 'AJUSTES'];
   const MOVEMENT_CONTROLS = [
     ['WASD / Flechas', 'Moverse'],
     ['Shift', 'Correr'],
@@ -16,19 +16,18 @@
     ['L', 'Encender o apagar linterna'],
     ['F', 'Usar herramienta'],
     ['M', 'Activar o silenciar sonido'],
-    ['G', 'Devolver equipo en el porche'],
   ];
   const JOURNAL_CONTROLS = [
     ['1–3', 'Equipar un espacio del inventario'],
     ['Tab / J', 'Abrir o cerrar el diario'],
     ['Q / E', 'Cambiar pestaña'],
     ['Flechas', 'Navegar en el diario'],
-    ['Enter / Espacio', 'Marcar o elegir en Pruebas'],
+    ['Enter / Espacio', 'Confirmar en una interfaz'],
     ['Clic', 'Seleccionar elementos'],
     ['Esc', 'Cerrar diario o volver al menú'],
   ];
   const C = {
-    shade: 'rgba(5,6,8,0.9)',
+    shade: 'rgba(5,6,8,0.24)',
     cover: '#3b2b20',
     coverEdge: '#21180f',
     paper: '#a39577',
@@ -49,6 +48,33 @@
   const LEFT = { x: 36, y: 16, w: 190 };
   const RIGHT = { x: 246, y: 16, w: 190 };
   const GRID = { cols: 3, row: 12 };
+  const CLOSE = { x: 428, y: 4, w: 20, h: 15 };
+
+  function journalButton(state) {
+    return { x: state.view.w - 77, y: state.debug ? 27 : 6, w: 71, h: 17 };
+  }
+
+  function contains(rect, x, y) {
+    return x >= rect.x && x < rect.x + rect.w && y >= rect.y && y < rect.y + rect.h;
+  }
+
+  function openPanel(state, mode) {
+    if (state?.scene !== 'play' || state.journal.open) return;
+    state.journal.open = true;
+    state.journal.mode = mode;
+    state.journal.boardMessage = '';
+    state.journal.hits = [];
+    state.keys.clear();
+  }
+
+  function closePanel(j) {
+    j.open = false;
+    j.mode = null;
+    j.hits = [];
+  }
+
+  Umbra.on('base:board', (_, state) => openPanel(state, 'board'));
+  Umbra.on('base:objectives', (_, state) => openPanel(state, 'objectives'));
 
   // ---------- Íconos de evidencias (12×12, pocos colores) ----------
   const ICONS = {
@@ -111,6 +137,8 @@
       }
     }
   }
+
+  Umbra.journal = { drawIcon };
 
   // ---------- Utilidades ----------
   const data = () => Umbra.data;
@@ -175,22 +203,6 @@
 
   function drawBook(ctx, j) {
     const { x, y, w, h } = BOOK;
-    // Pestañas (detrás de la tapa).
-    TABS.forEach((label, i) => {
-      const ty = y + 12 + i * 56;
-      const active = j.tab === i;
-      ctx.fillStyle = C.coverEdge;
-      ctx.fillRect(x + w - 2, ty - 1, 20, 54);
-      ctx.fillStyle = active ? C.paper : C.tabOff;
-      ctx.fillRect(x + w - 2, ty, active ? 19 : 17, 52);
-      ctx.save();
-      ctx.translate(x + w + 11, ty + 26);
-      ctx.rotate(Math.PI / 2);
-      ctx.textAlign = 'center';
-      text(ctx, label, 0, 3, active ? C.ink : '#2e261d', 'bold 8px monospace', 48);
-      ctx.restore();
-      hit(j, x + w - 2, ty, 19, 52, () => setTab(j, i));
-    });
     // Tapa.
     ctx.fillStyle = C.coverEdge;
     ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
@@ -218,6 +230,25 @@
       const sy = y + 8 + ((i * 53 + i * i * 7) % (h - 20));
       if (Math.abs(sx - (x + w / 2)) > 6) ctx.fillRect(sx, sy, 1 + (i % 2), 1);
     }
+    if (j.mode === 'book') {
+      TABS.forEach((label, i) => {
+        const tx = x + 4 + i * 77;
+        const active = j.tab === i;
+        ctx.fillStyle = C.coverEdge;
+        ctx.fillRect(tx - 1, 3, 75, 17);
+        ctx.fillStyle = active ? C.paper : C.tabOff;
+        ctx.fillRect(tx, 4, 73, 15);
+        ctx.textAlign = 'center';
+        text(ctx, label, tx + 36, 14, active ? C.ink : '#eee3cd', 'bold 8px monospace');
+        hit(j, tx, 4, 73, 15, () => setTab(j, i));
+      });
+    }
+    ctx.fillStyle = C.coverEdge;
+    ctx.fillRect(CLOSE.x, CLOSE.y, CLOSE.w, CLOSE.h);
+    ctx.textAlign = 'center';
+    text(ctx, '×', CLOSE.x + CLOSE.w / 2, CLOSE.y + 11, '#eee3cd', 'bold 11px monospace');
+    ctx.textAlign = 'left';
+    hit(j, CLOSE.x, CLOSE.y, CLOSE.w, CLOSE.h, () => closePanel(j));
   }
 
   function pageTitle(ctx, page, str) {
@@ -310,9 +341,16 @@
     }
   }
 
-  function drawEquipment(ctx, j, slots) {
+  function exchangeSelected(state) {
+    state.journal.boardMessage = Umbra.tools.exchange(state, data().tools[state.journal.toolSel]);
+  }
+
+  function drawEquipment(ctx, state) {
+    const j = state.journal;
+    const slots = state.tools.slots;
+    const board = j.mode === 'board';
     const tools = data().tools || [];
-    pageTitle(ctx, LEFT, 'Equipo');
+    pageTitle(ctx, LEFT, board ? 'Equipo del campamento' : 'Equipo');
     tools.forEach((t, i) => {
       const y = LEFT.y + 26 + i * 17;
       if (i === j.toolSel) {
@@ -336,7 +374,7 @@
     if (!t) return;
     pageTitle(ctx, RIGHT, t.name);
     const slot = slots.indexOf(t);
-    const hint = slot < 0 ? 'Recógela en el porche con E' : 'Espacio ' + (slot + 1) + ' · F para usar al equiparla';
+    const hint = slot < 0 ? 'Disponible en el panel del campamento' : 'Espacio ' + (slot + 1) + ' · F para usar al equiparla';
     text(ctx, hint, RIGHT.x, RIGHT.y + 32, C.inkSoft, '8px monospace', RIGHT.w);
     let y = paragraph(ctx, t.description, RIGHT, RIGHT.y + 48, 9);
     y += 8;
@@ -346,6 +384,14 @@
       const ev = evidenceById(id) || { id, name: id };
       evidenceRow(ctx, j, ev, RIGHT.x, y, RIGHT.w);
       y += 16;
+    }
+    if (board) {
+      text(ctx, 'Inventario: ' + slots.filter(Boolean).length + '/3', LEFT.x, 199, C.ink, 'bold 10px monospace');
+      ctx.fillStyle = C.select;
+      ctx.fillRect(RIGHT.x, 194, RIGHT.w, 19);
+      text(ctx, slot < 0 ? 'Enter · Recoger' : 'Enter · Devolver', RIGHT.x + 6, 207, C.ink, 'bold 9px monospace');
+      hit(j, RIGHT.x, 194, RIGHT.w, 19, () => exchangeSelected(state));
+      text(ctx, j.boardMessage, RIGHT.x, 229, C.ink, '9px monospace', RIGHT.w);
     }
   }
 
@@ -365,6 +411,50 @@
       ctx.fillStyle = C.paperLine;
       ctx.fillRect(page.x, y + 23, page.w, 1);
     });
+  }
+
+  function drawSettings(ctx, j) {
+    pageTitle(ctx, LEFT, 'Ajustes de sonido');
+    pageTitle(ctx, RIGHT, 'Sonidos de la mansión');
+    Umbra.audio.volumeControls.forEach(({ id, label }, i) => {
+      const page = i < 3 ? LEFT : RIGHT;
+      const y = 51 + (i < 3 ? i : i - 3) * 49;
+      const x = page.x + 6;
+      const w = page.w - 12;
+      const volume = Umbra.audio.volume(id);
+      if (j.volumeSel === i) {
+        ctx.fillStyle = C.select;
+        ctx.fillRect(page.x, y - 12, page.w, 38);
+      }
+      text(ctx, label, x, y, C.ink, 'bold 9px monospace');
+      ctx.textAlign = 'right';
+      text(ctx, volume + '%', x + w, y, C.ink, '9px monospace');
+      ctx.textAlign = 'left';
+      const knob = Math.round(w * volume / 100);
+      ctx.fillStyle = C.paperLine;
+      ctx.fillRect(x, y + 11, w, 5);
+      ctx.fillStyle = C.inkSoft;
+      ctx.fillRect(x, y + 11, knob, 5);
+      ctx.fillStyle = C.ink;
+      ctx.fillRect(x + knob - 2, y + 8, 5, 11);
+      hit(j, x - 3, y + 5, w + 7, 18, clickX => {
+        j.volumeSel = i;
+        Umbra.audio.setVolume(id, Math.round(100 * (clickX - x) / w));
+      });
+    });
+    text(ctx, 'M · Silenciar o reactivar todo', RIGHT.x, 158, C.inkSoft, '9px monospace');
+  }
+
+  function drawObjectives(ctx, state) {
+    const objectives = Umbra.investigation.objectives(state);
+    pageTitle(ctx, LEFT, 'Objetivos del campamento');
+    pageTitle(ctx, RIGHT, 'Progreso de investigación');
+    objectives.forEach(({ label, done }, index) => {
+      text(ctx, (done ? '[✓] ' : '[ ] ') + label, LEFT.x, 57 + index * 25,
+        done ? C.green : C.ink, '9px monospace', LEFT.w);
+    });
+    text(ctx, objectives.filter(item => item.done).length + '/3 completados', RIGHT.x, 57, C.ink, 'bold 11px monospace');
+    paragraph(ctx, 'Selecciona una entidad en Pruebas y vuelve al camión para terminar la investigación.', RIGHT, 85, 4);
   }
 
   function drawProof(ctx, j) {
@@ -431,7 +521,7 @@
     const answer = data().entities.find((e) => e.id === j.answer);
     const by = BOOK.y + BOOK.h - 26;
     text(ctx, 'Posibles: ' + left + ' de ' + data().entities.length, RIGHT.x, by, C.inkSoft, '8px monospace');
-    text(ctx, answer ? 'Respuesta: ' + answer.name + '. Sal por la puerta principal.' : 'Elige tu respuesta con Enter o clic.',
+    text(ctx, answer ? 'Respuesta: ' + answer.name + '. Regresa al camión.' : 'Elige tu respuesta con Enter o clic.',
       RIGHT.x, by + 10, answer ? C.red : C.inkSoft, answer ? 'bold 8px monospace' : '8px monospace', RIGHT.w);
   }
 
@@ -446,15 +536,24 @@
   }
 
   function navigate(j, code) {
-    if (j.tab === 3) return;
     const dx = code === 'ArrowLeft' ? -1 : code === 'ArrowRight' ? 1 : 0;
     const dy = code === 'ArrowUp' ? -1 : code === 'ArrowDown' ? 1 : 0;
+    if (j.mode === 'objectives' || (j.mode === 'book' && j.tab === 3)) return;
+    if (j.mode === 'book' && j.tab === 4) {
+      const controls = Umbra.audio.volumeControls;
+      j.volumeSel = Math.max(0, Math.min(controls.length - 1, j.volumeSel + dy));
+      const { id } = controls[j.volumeSel];
+      if (dx) Umbra.audio.setVolume(id, Umbra.audio.volume(id) + 5 * dx);
+      return;
+    }
+    if (j.mode === 'board' || j.tab === 1) {
+      j.toolSel = Math.max(0, Math.min(data().tools.length - 1, j.toolSel + dy));
+      return;
+    }
     const entities = data().entities.length;
     if (j.tab === 0) {
       const n = gridMove(j.entitySel, entities, dx, dy);
       if (n !== null) j.entitySel = n;
-    } else if (j.tab === 1) {
-      j.toolSel = Math.max(0, Math.min(data().tools.length - 1, j.toolSel + dy));
     } else if (j.focus === 0) {
       const n = gridMove(j.evSel, data().evidence.length, dx, dy);
       if (n === null) { if (dx > 0) j.focus = 1; } else j.evSel = n;
@@ -488,10 +587,12 @@
       loadImages();
       state.journal = {
         open: false,
+        mode: null,
         tab: 0,
         focus: 0,      // 0 página izquierda, 1 página derecha (en PRUEBAS)
         entitySel: 0,
         toolSel: 0,
+        volumeSel: 0,
         evSel: 0,
         marks: {},     // id de evidencia → 1 confirmada, 2 descartada
         detected: new Set(),
@@ -505,31 +606,54 @@
       if (event.code === 'Tab' || event.code === 'KeyJ') {
         event.preventDefault();
         if (!event.repeat) {
-          j.open = !j.open;
-          state.keys.clear();
+          if (j.open) closePanel(j);
+          else openPanel(state, 'book');
         }
         return true;
       }
       if (!j.open) return false;
       event.preventDefault();
       const code = event.code;
-      if (code === 'Escape') j.open = false;
-      else if (code === 'KeyQ' && !event.repeat) setTab(j, j.tab - 1);
-      else if (code === 'KeyE' && !event.repeat) setTab(j, j.tab + 1);
+      if (code === 'Escape') closePanel(j);
+      else if (j.mode === 'book' && code === 'KeyQ' && !event.repeat) setTab(j, j.tab - 1);
+      else if (j.mode === 'book' && code === 'KeyE' && !event.repeat) setTab(j, j.tab + 1);
       else if (code.startsWith('Arrow')) navigate(j, code);
-      else if ((code === 'Enter' || code === 'Space') && !event.repeat) activate(j);
+      else if ((code === 'Enter' || code === 'Space') && !event.repeat) {
+        if (j.mode === 'board') exchangeSelected(state);
+        else if (j.mode === 'book') activate(j);
+      }
       return true; // con el diario abierto, ninguna tecla llega al juego
     },
     onClick(x, y, state) {
       const j = state.journal;
-      if (!j || !j.open) return;
+      if (state.scene !== 'play' || !j) return;
+      if (!j.open) {
+        if (contains(journalButton(state), x, y)) openPanel(state, 'book');
+        return;
+      }
       for (let i = j.hits.length - 1; i >= 0; i--) {
         const h = j.hits[i];
-        if (x >= h.x && x < h.x + h.w && y >= h.y && y < h.y + h.h) {
-          h.fn();
+        if (contains(h, x, y)) {
+          h.fn(x, y);
           return;
         }
       }
+    },
+    drawUI(ctx, state) {
+      if (state.scene !== 'play' || state.journal?.open) return;
+      const { x, y, w, h } = journalButton(state);
+      ctx.save();
+      ctx.fillStyle = 'rgba(7,9,12,.85)';
+      ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = '#a39577';
+      ctx.fillRect(x + 4, y + 3, 9, 11);
+      ctx.fillStyle = '#3b2b20';
+      ctx.fillRect(x + 4, y + 3, 2, 11);
+      ctx.fillRect(x + 8, y + 6, 3, 1);
+      ctx.fillRect(x + 8, y + 9, 3, 1);
+      ctx.textAlign = 'left';
+      text(ctx, 'J · Diario', x + 17, y + 12, '#ded7c7', '8px monospace');
+      ctx.restore();
     },
     drawOverlay(ctx, state) {
       const j = state.journal;
@@ -539,20 +663,27 @@
       ctx.textAlign = 'left';
       ctx.fillStyle = C.shade;
       ctx.fillRect(0, 0, state.view.w, state.view.h);
-      ctx.fillStyle = '#07090c'; // tapa los mensajes del juego bajo la línea de ayuda
-      ctx.fillRect(0, BOOK.y + BOOK.h + 2, state.view.w, state.view.h - BOOK.y - BOOK.h - 2);
       drawBook(ctx, j);
-      if (j.tab === 0) drawEntities(ctx, j);
-      else if (j.tab === 1) drawEquipment(ctx, j, state.tools.slots);
+      if (j.mode === 'board') drawEquipment(ctx, state);
+      else if (j.mode === 'objectives') drawObjectives(ctx, state);
+      else if (j.tab === 0) drawEntities(ctx, j);
+      else if (j.tab === 1) drawEquipment(ctx, state);
       else if (j.tab === 2) drawProof(ctx, j);
-      else {
+      else if (j.tab === 3) {
         drawControls(ctx, LEFT, 'Movimiento e interacción', MOVEMENT_CONTROLS);
         drawControls(ctx, RIGHT, 'Investigación e interfaz', JOURNAL_CONTROLS);
+      } else {
+        drawSettings(ctx, j);
       }
       ctx.textAlign = 'center';
-      const footer = j.tab === 3
-        ? 'Q/E o clic: cambiar pestaña · Tab/J o Esc: cerrar'
+      const footer = j.mode === 'board' ? 'Flechas o clic: seleccionar · Enter: recoger/devolver · Esc: cerrar'
+        : j.mode === 'objectives' ? 'Esc: cerrar'
+        : j.tab === 4 ? '↑/↓ elegir · ←/→ o clic ajustar · Q/E pestaña · Esc cerrar'
         : 'Q/E pestaña · Flechas · Enter marcar/elegir · Clic · Tab/J cerrar';
+      ctx.font = '8px monospace';
+      const width = Math.ceil(ctx.measureText(footer).width) + 10;
+      ctx.fillStyle = 'rgba(7,9,12,.85)';
+      ctx.fillRect((state.view.w - width) / 2, state.view.h - 15, width, 13);
       text(ctx, footer, state.view.w / 2, state.view.h - 5, C.hint, '8px monospace');
       ctx.restore();
     },

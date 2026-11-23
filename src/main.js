@@ -205,7 +205,7 @@
     ctx.font = '10px monospace';
     ctx.fillStyle = '#8c9cac';
     ctx.fillText('Encuentra evidencias, identifica a la entidad', VIEW_W / 2, 119);
-    ctx.fillText('en el diario y sal por la puerta principal.', VIEW_W / 2, 132);
+    ctx.fillText('en el diario y termina en el camión del campamento.', VIEW_W / 2, 132);
     ctx.fillStyle = C.fuse;
     ctx.fillText('Enter o clic para comenzar la partida', VIEW_W / 2, 180);
     // Los ojos en la oscuridad.
