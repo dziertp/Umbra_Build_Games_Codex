@@ -26,7 +26,12 @@
     model: null,
     message: '',
     messageUntil: 0,
+    view: { w: VIEW_W, h: VIEW_H, ox: 0, oy: 0 }, // pantalla = mundo + (ox, oy)
+    G,
   };
+  Umbra.state = state;
+  Umbra.tell = tell;
+  Umbra.rebuild = rebuild;
 
   const C = {
     void: '#07090c',
@@ -62,6 +67,8 @@
     state.player = { x: spawn.x, y: spawn.y, facing: -Math.PI / 2 };
     rebuild();
     state.scene = 'play';
+    Umbra.call('start', state);
+    Umbra.emit('start');
     tell('Planta baja. Explora la mansión.');
   }
 
@@ -93,6 +100,9 @@
       if (e.code === 'Enter' || e.code === 'Space') startGame();
       return;
     }
+    for (const sys of Umbra.systems) {
+      if (sys.onKey && sys.onKey(e, state) === true) return;
+    }
     if (e.code === 'KeyE' && !e.repeat) interact();
     if (e.code === 'Escape') state.scene = 'menu';
     state.keys.add(e.code);
@@ -106,6 +116,7 @@
   // ---------- Actualización ----------
   function update(dt) {
     if (state.scene !== 'play') return;
+    Umbra.call('update', dt, state);
     const k = state.keys;
     let dx = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
     let dy = (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0) - (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0);
@@ -153,8 +164,10 @@
     const p = state.player;
     ctx.fillStyle = C.void;
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    state.view.ox = Math.round(VIEW_W / 2 - p.x);
+    state.view.oy = Math.round(VIEW_H / 2 - p.y);
     ctx.save();
-    ctx.translate(Math.round(VIEW_W / 2 - p.x), Math.round(VIEW_H / 2 - p.y));
+    ctx.translate(state.view.ox, state.view.oy);
 
     for (const r of D.rooms) rect(r.slice(1, 5), r[5]);
     for (const w of D.windows || []) line(w, C.window, 3);
@@ -172,6 +185,7 @@
     if (D.closet) rect(D.closet, C.closet, state.closetOpen[state.floor] ? C.door : '#6fb3a3');
     if (D.fuse) rect(D.fuse, C.fuse);
     for (const s of state.model.walls) line(s, C.wall, s[4]);
+    Umbra.call('drawWorld', ctx, state);
 
     // Jugador: referencia de 24 u con ojos hacia donde mira.
     ctx.fillStyle = C.player;
@@ -186,6 +200,8 @@
     ctx.fillRect(Math.round(p.x + ex + px - 1), Math.round(p.y + ey + py - 1), 2, 2);
     ctx.fillRect(Math.round(p.x + ex - px - 1), Math.round(p.y + ey - py - 1), 2, 2);
     ctx.restore();
+    Umbra.call('drawLight', ctx, state);
+    Umbra.call('drawUI', ctx, state);
 
     if (performance.now() < state.messageUntil) {
       ctx.fillStyle = 'rgba(7,9,12,.75)';
