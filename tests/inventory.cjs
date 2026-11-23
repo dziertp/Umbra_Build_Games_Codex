@@ -32,7 +32,12 @@ for (const [, file] of read('index.html').matchAll(/<script src="([^"]+)"/g)) {
 const U = sandbox.Umbra;
 const state = U.state;
 const press = (code, repeat = false) => {
-  for (const callback of handlers.get('keydown')) callback({ code, repeat, preventDefault: noop });
+  let stopped = false;
+  const event = { code, repeat, preventDefault: noop, stopImmediatePropagation: () => { stopped = true; } };
+  for (const callback of handlers.get('keydown')) {
+    callback(event);
+    if (stopped) break;
+  }
 };
 const place = (x, y, floor = 0) => {
   Object.assign(state.player, { x, y });
@@ -50,11 +55,17 @@ const finishBlink = () => {
   drawJournal(drawing, state);
 };
 
+assert.equal(state.scene, 'intro');
 press('Enter');
+assert.equal(state.scene, 'menu');
+press('Enter');
+assert.equal(state.paused, true);
+press('Enter');
+assert.equal(state.paused, false);
 check([null, null, null, null]);
 assert.equal(state.tools.selected, -1);
 const [first, second, third, fourth, fifth] = U.data.tools;
-assert.equal(U.data.tools.length, 9);
+assert.equal(U.data.tools.filter(tool => tool.evidence.length > 0).length, 8);
 const flashlight = U.data.tools.find(tool => tool.id === 'flashlight');
 assert.equal(flashlight.light, true);
 const used = [];
