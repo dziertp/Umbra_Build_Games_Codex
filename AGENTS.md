@@ -51,6 +51,22 @@ Umbra.data.entities = [{ id: '…', name: '…', evidence: ['emf', '…'], descr
 
 Varias entidades pueden compartir evidencias; se distinguen por `traits` (comportamiento).
 
+### La entidad de la partida (acordado)
+
+Al empezar la partida, `src/entity.js` elige una entidad al azar y su habitación favorita, y deja:
+
+```js
+state.entity = {
+  type,      // el objeto de Umbra.data.entities elegido
+  floor,     // piso de su habitación favorita (0 o 1)
+  room,      // [nombre, x, y, ancho, alto, color] de esa habitación
+  x, y,      // posición actual de la entidad (mundo)
+  mode,      // 'idle' | 'hunt' ...
+};
+```
+
+Las herramientas detectan evidencias cuando el jugador está en `state.entity.room` (mismo `floor`) y la evidencia está en `state.entity.type.evidence`. Mientras `entity.js` no exista, el sistema de herramientas puede crear un `state.entity` provisional en su `start()` si no hay uno.
+
 ## Reparto de archivos (evita conflictos)
 
 | Área | Responsable | Archivos |
