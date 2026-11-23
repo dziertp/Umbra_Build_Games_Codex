@@ -111,12 +111,12 @@
   addEventListener('keyup', (e) => state.keys.delete(e.code));
   addEventListener('blur', () => state.keys.clear());
   screen.addEventListener('click', (e) => {
+    const bounds = screen.getBoundingClientRect();
+    const x = (e.clientX - bounds.left) * VIEW_W / bounds.width;
+    const y = (e.clientY - bounds.top) * VIEW_H / bounds.height;
     if (state.scene === 'menu') {
-      startGame();
+      if (!Umbra.audio.menuClick(x, y)) startGame();
     } else if (state.scene === 'play') {
-      const bounds = screen.getBoundingClientRect();
-      const x = (e.clientX - bounds.left) * VIEW_W / bounds.width;
-      const y = (e.clientY - bounds.top) * VIEW_H / bounds.height;
       Umbra.call('onClick', x, y, state);
     }
   });
@@ -212,6 +212,7 @@
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(VIEW_W / 2 - 9, 147, 6, 2);
     ctx.fillRect(VIEW_W / 2 + 3, 147, 6, 2);
+    Umbra.call('drawMenu', ctx, state);
   }
 
   // ---------- Escalado a pantalla ----------

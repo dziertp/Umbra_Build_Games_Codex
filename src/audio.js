@@ -7,6 +7,12 @@
   let previousPosition, previousLamps, outageSource;
   let walking = false;
   let pendingPower, lastPower;
+  let menuTracks, menuCurrent, menuNext;
+  let menuEnabled = false;
+  let menuLevel = 0;
+  let menuFrame;
+  const menuFade = 0.32;
+  const menuButton = { x: 146, y: 197, w: 188, h: 18 };
   const voices = new Set();
   const volumeControls = [
     { id: 'master', label: 'Volumen general', initial: 90 },
@@ -14,6 +20,7 @@
     { id: 'switches', label: 'Interruptores', initial: 90 },
     { id: 'ambience', label: 'Ambiente', initial: 80 },
     { id: 'entities', label: 'Entidades y cacerías', initial: 90 },
+    { id: 'menuMusic', label: 'Música del menú', initial: 65 },
   ];
   const storageKey = 'umbra.audio.volumes';
   const clampVolume = value => Math.max(0, Math.min(100, Math.round(value)));
@@ -37,6 +44,12 @@
   Umbra.audio = {
     volumeControls,
     volume: id => volumes[id],
+    menuClick(x, y) {
+      const b = menuButton;
+      if (x < b.x || x >= b.x + b.w || y < b.y || y >= b.y + b.h) return false;
+      toggleMute(Umbra.state);
+      return true;
+    },
     setVolume(id, value) {
       if (!Object.hasOwn(volumes, id) || !Number.isFinite(value)) return;
       volumes[id] = clampVolume(value);
@@ -50,6 +63,65 @@
     const sample = new Audio('assets/audio/' + file);
     sample.preload = 'auto';
     return sample;
+  }
+
+  // Dos reproductores reutilizables para solapar el final con el inicio en file://.
+  function playMenuTrack(track) {
+    track.currentTime = 0;
+    track.volume = 0;
+    track.play().catch(error => {
+      if (error.name === 'AbortError') return;
+      menuEnabled = false;
+      stopMenuMusic();
+    });
+  }
+
+  function startMenuMusic() {
+    if (menuCurrent || typeof globalThis.Audio !== 'function') return;
+    menuTracks ||= [0, 1].map(() => loadSample('u_thxw0i7h4n-terror-213743.mp3'));
+    [menuCurrent] = menuTracks;
+    playMenuTrack(menuCurrent);
+  }
+
+  function stopMenuMusic() {
+    menuCurrent?.pause();
+    menuNext?.pause();
+    menuCurrent = menuNext = null;
+    menuLevel = 0;
+  }
+
+  function updateMenuMusic(state) {
+    const now = performance.now();
+    const dt = Math.min(0.1, (now - (menuFrame ?? now)) / 1000);
+    menuFrame = now;
+    const wanted = state.scene === 'menu' && menuEnabled && !muted;
+    if (wanted) startMenuMusic();
+    if (!menuCurrent) return;
+
+    menuLevel = wanted ? Math.min(1, menuLevel + dt / 0.55) : Math.max(0, menuLevel - dt / 0.16);
+    if (!wanted && !menuLevel) {
+      stopMenuMusic();
+      return;
+    }
+
+    const remaining = menuCurrent.duration - menuCurrent.currentTime;
+    if (wanted && !menuNext && (remaining <= menuFade || menuCurrent.ended)) {
+      menuNext = menuTracks.find(track => track !== menuCurrent);
+      playMenuTrack(menuNext);
+    }
+    const volume = 0.4 * menuLevel * volumes.master * volumes.menuMusic / 10000;
+    // El reloj del MP3 mantiene la mezcla aun si cae la frecuencia de cuadros.
+    const mix = menuNext ? Math.max(0, Math.min(1, 1 - remaining / menuFade)) : 0;
+    menuCurrent.volume = volume * (1 - mix);
+    if (menuNext) {
+      menuNext.volume = volume * mix;
+      if (menuCurrent.ended || remaining <= 0.005) {
+        menuCurrent.pause();
+        menuCurrent = menuNext;
+        menuNext = null;
+        menuCurrent.volume = volume;
+      }
+    }
   }
 
   function unlock() {
@@ -245,24 +317,35 @@
     if (id === 'emf' && evidence === 'emf') voice(output(state), 0.14, 0.11, 990, 880, 'sine');
   });
 
-  // El menú procesa Enter antes de los sistemas. M funciona también aquí y en el diario.
-  addEventListener('keydown', (event) => {
-    if (event.code !== 'KeyM' || event.repeat) return;
-    muted = !muted;
+  function toggleMute(state) {
+    if (state?.scene === 'menu' && !menuEnabled) {
+      menuEnabled = true;
+      muted = false;
+    } else {
+      muted = !muted;
+    }
     if (muted) {
+      stopMenuMusic();
       stopDrone();
       stopSteps();
       switchClick?.pause();
       for (const source of voices) source.stop();
     } else {
       unlock();
+      if (state?.scene === 'menu') startMenuMusic();
     }
     applyVolumes();
+  }
+
+  // El menú procesa Enter antes de los sistemas. M funciona también aquí y en el diario.
+  addEventListener('keydown', (event) => {
+    if (event.code === 'KeyM' && !event.repeat) toggleMute(Umbra.state);
   });
 
   Umbra.register({
     order: 90,
     start(state) {
+      menuEnabled = true;
       unlock();
       previousPosition = null;
       stopSteps();
@@ -274,7 +357,8 @@
     },
     updateAudio(state) {
       const playing = state.scene === 'play';
-      updateDrone(playing);
+      updateMenuMusic(state);
+      updateDrone(playing && !menuCurrent);
       if (!playing) {
         stopSteps();
         if (switchClick && !switchClick.paused) switchClick.pause();
@@ -282,6 +366,17 @@
       }
       updateSteps(state);
       updatePower(state);
+    },
+    drawMenu(ctx) {
+      const { x, y, w, h } = menuButton;
+      ctx.save();
+      ctx.fillStyle = '#20201e';
+      ctx.fillRect(x, y, w, h);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#a5b4c1';
+      ctx.font = '9px monospace';
+      ctx.fillText(!menuEnabled || muted ? 'M · Activar sonido' : 'M · Silenciar sonido', x + w / 2, y + 12);
+      ctx.restore();
     },
   });
 })();

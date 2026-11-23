@@ -442,7 +442,7 @@
         Umbra.audio.setVolume(id, Math.round(100 * (clickX - x) / w));
       });
     });
-    text(ctx, 'M · Silenciar o reactivar todo', RIGHT.x, 158, C.inkSoft, '9px monospace');
+    text(ctx, 'M · Silenciar o reactivar todo', RIGHT.x, 204, C.inkSoft, '9px monospace');
   }
 
   function drawObjectives(ctx, state) {
