@@ -21,44 +21,92 @@
     return false;
   }
 
-  // ¿Hay algún lugar donde el jugador quepa, a su alcance y con línea directa al interruptor?
-  function reachable(G, m, sx, sy) {
-    for (let r = 10; r < SWITCH_REACH - 2; r += 4) {
-      for (let k = 0; k < 16; k++) {
-        const a = (k / 16) * Math.PI * 2;
-        const px = sx + Math.cos(a) * r;
-        const py = sy + Math.sin(a) * r;
-        if (!G.blocked(px, py, PLAYER_R, m) && !blockedLine(px, py, sx, sy, m.walls)) return true;
+  // Celdas a las que el jugador puede llegar caminando desde el inicio de cada piso (BFS en la
+  // cuadrícula A*). Se calcula una vez: el mapa no cambia durante la partida.
+  const walkable = [];
+  function walkableGrid(G, floor) {
+    if (walkable[floor]) return walkable[floor];
+    const g = G.grid(PLAYER_R * 2, { floor, closetOpen: false });
+    const D = G.floors[floor];
+    const start = D.spawn || G.floors[0].spawn;
+    const seen = new Uint8Array(g.free.length);
+    const si = Math.round((start.x - g.x) / g.step) + Math.round((start.y - g.y) / g.step) * g.cols;
+    const queue = [si];
+    if (g.free[si]) seen[si] = 1;
+    while (queue.length) {
+      const k = queue.pop();
+      const i = k % g.cols;
+      for (const n of [k - 1, k + 1, k - g.cols, k + g.cols]) {
+        if (n < 0 || n >= g.free.length || seen[n] || !g.free[n]) continue;
+        if ((n === k - 1 && i === 0) || (n === k + 1 && i === g.cols - 1)) continue;
+        seen[n] = 1;
+        queue.push(n);
+      }
+    }
+    return (walkable[floor] = { g, seen });
+  }
+
+  // ¿Puede el jugador pararse en algún lugar conectado, a su alcance y con línea directa?
+  function reachableFrom(G, m, floor, sx, sy) {
+    const { g, seen } = walkableGrid(G, floor);
+    const R = SWITCH_REACH - 2;
+    for (let j = Math.floor((sy - R - g.y) / g.step); j <= Math.ceil((sy + R - g.y) / g.step); j++) {
+      for (let i = Math.floor((sx - R - g.x) / g.step); i <= Math.ceil((sx + R - g.x) / g.step); i++) {
+        if (i < 0 || j < 0 || i >= g.cols || j >= g.rows || !seen[j * g.cols + i]) continue;
+        const px = g.x + i * g.step;
+        const py = g.y + j * g.step;
+        // Junto al armario o los fusibles, E es de ellos: esos lugares no cuentan.
+        const D = G.floors[floor];
+        if (near({ x: px, y: py }, D.closet, 40) || near({ x: px, y: py }, D.fuse, 30)) continue;
+        if (Math.hypot(px - sx, py - sy) <= R && !blockedLine(px, py, sx, sy, m.walls)) return true;
       }
     }
     return false;
   }
 
-  // Interruptor de cada habitación: en la pared junto a una puerta. Prueba ambos extremos
-  // de cada puerta, primero por dentro y luego por fuera, y se queda con el primero alcanzable
-  // (así no queda detrás de la hoja abierta de la puerta).
+  // Interruptor de cada habitación: siempre sobre un tramo real de muro (nunca en un vano), a
+  // 9 u del extremo del tramo que da a una abertura (puerta o paso), por dentro. Si no sirve,
+  // otros puntos del muro, y por último por fuera. Se queda con el primero alcanzable.
   function switchesFor(G, D, floor) {
     const m = G.model({ floor, closetOpen: false });
+    const walls = D.walls.map((w) => (w[1] === w[3]
+      ? { h: true, c: w[1], a: Math.min(w[0], w[2]), b: Math.max(w[0], w[2]) }
+      : { h: false, c: w[0], a: Math.min(w[1], w[3]), b: Math.max(w[1], w[3]) }));
+    const covered = (h, c, t) => walls.some((w) => w.h === h && w.c === c && t > w.a + 0.5 && t < w.b - 0.5);
+    const inFurniture = (x, y) => D.furniture.some((f) => x > f[1] - 3 && x < f[1] + f[3] + 3 && y > f[2] - 3 && y < f[2] + f[4] + 3);
     return D.rooms.map((r, i) => {
       const [, rx, ry, rw, rh] = r;
+      const edges = [
+        { h: true, c: ry, lo: rx, hi: rx + rw, inward: 1 },
+        { h: true, c: ry + rh, lo: rx, hi: rx + rw, inward: -1 },
+        { h: false, c: rx, lo: ry, hi: ry + rh, inward: 1 },
+        { h: false, c: rx + rw, lo: ry, hi: ry + rh, inward: -1 },
+      ];
       const candidates = [];
-      for (const d of D.doors || []) {
-        if (d[0] === 'v') {
-          const [, x, y1, y2] = d;
-          const side = x === rx ? 1 : x === rx + rw ? -1 : 0;
-          if (!side || y1 < ry || y2 > ry + rh) continue;
-          const ys = [y2 + 9, y1 - 9].filter((y) => y >= ry + 8 && y <= ry + rh - 8);
-          for (const s of [side, -side]) for (const y of ys) candidates.push({ x: x + s * 5, y });
-        } else {
-          const [, y, x1, x2] = d;
-          const side = y === ry ? 1 : y === ry + rh ? -1 : 0;
-          if (!side || x1 < rx || x2 > rx + rw) continue;
-          const xs = [x2 + 9, x1 - 9].filter((x) => x >= rx + 8 && x <= rx + rw - 8);
-          for (const s of [side, -side]) for (const x of xs) candidates.push({ x, y: y + s * 5 });
+      for (const e of edges) {
+        for (const w of walls) {
+          if (w.h !== e.h || w.c !== e.c) continue;
+          const lo = Math.max(w.a, e.lo);
+          const hi = Math.min(w.b, e.hi);
+          if (hi - lo < 20) continue;
+          // Un extremo da a una abertura si no está en la esquina y el muro no sigue.
+          const openLo = lo > e.lo + 1 && !covered(e.h, e.c, lo - 2);
+          const openHi = hi < e.hi - 1 && !covered(e.h, e.c, hi + 2);
+          const along = [];
+          if (openLo) along.push([lo + 9, 0]);
+          if (openHi) along.push([hi - 9, 0]);
+          along.push([lo + 12, 1], [hi - 12, 1], [(lo + hi) / 2, 2]);
+          for (const [t, prio] of along) {
+            for (const [side, extra] of [[e.inward, 0], [-e.inward, 3]]) {
+              const off = e.c + side * 5;
+              candidates.push({ x: e.h ? t : off, y: e.h ? off : t, prio: prio + extra, inside: side === e.inward });
+            }
+          }
         }
       }
-      const ok = candidates.find((c) => reachable(G, m, c.x, c.y)) || candidates[0];
-      return ok ? { room: i, x: ok.x, y: ok.y } : { room: i, x: rx + rw / 2, y: ry + 5 }; // sin puerta: pared superior
+      candidates.sort((a, b) => a.prio - b.prio);
+      const ok = candidates.find((c) => !inFurniture(c.x, c.y) && reachableFrom(G, m, floor, c.x, c.y)) || candidates[0];
+      return ok ? { room: i, x: ok.x, y: ok.y } : { room: i, x: rx + rw / 2, y: ry + 5 };
     });
   }
 
