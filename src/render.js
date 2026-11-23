@@ -581,6 +581,26 @@
     ctx.stroke();
   }
 
+  // ---------- Props de Anais (assets/scenarios/props_16x16/<nombre>_16x16.png) ----------
+  // Decor ["prop", x, y, ancho, alto, nombre]. Se dibujan en vivo, sobre suelos y muebles
+  // (velas en veladores, libros en escritorios), así aparecen aunque la imagen cargue tarde.
+  const propImages = {};
+  function propImage(name) {
+    let img = propImages[name];
+    if (!img) {
+      img = propImages[name] = new Image();
+      img.src = 'assets/scenarios/props_16x16/' + name + '_16x16.png';
+    }
+    return img.complete && img.naturalWidth ? img : null;
+  }
+  function drawProps(ctx, D) {
+    for (const d of D.decor || []) {
+      if (d[0] !== 'prop') continue;
+      const img = propImage(d[5]);
+      if (img) ctx.drawImage(img, Math.round(d[1]), Math.round(d[2]), d[3] || img.width, d[4] || img.height);
+    }
+  }
+
   // ---------- API ----------
   function map(ctx, state) {
     const floor = state.floor;
@@ -589,6 +609,7 @@
     const fc = floorCache[floor];
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(fc.canvas, fc.x, fc.y);
+    drawProps(ctx, D);
     for (const w of D.windows || []) line(ctx, w, C.window, 3);
     const [sx, sy, sw, sh] = D.stairs;
     ctx.fillStyle = C.stairs;
