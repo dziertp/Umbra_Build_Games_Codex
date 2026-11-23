@@ -2,7 +2,7 @@
   'use strict';
 
   let provisionalEntity;
-  const slotKeys = ['Digit1', 'Digit2', 'Digit3'];
+  const slotKeys = ['Digit1', 'Digit2', 'Digit3', 'Digit4'];
   const interference = ['ERROR', '???', '-- / --', 'SIN SEÑAL', '###', 'FUERA DE RANGO'];
 
   function equip(tools, slot) {
@@ -27,7 +27,7 @@
       return 'Devuelves ' + tool.name + '.';
     }
     const empty = tools.slots.indexOf(null);
-    if (empty < 0) return 'Inventario lleno (3/3).';
+    if (empty < 0) return 'Inventario lleno (' + tools.slots.length + '/' + tools.slots.length + ').';
     tools.slots[empty] = tool;
     if (tools.selected < 0) equip(tools, empty);
     return 'Recoges ' + tool.name + '.';
@@ -107,7 +107,7 @@
       if (event.code !== 'KeyF') return false;
       if (event.repeat) return true;
       if (!tool) {
-        Umbra.tell('Equipa una herramienta con 1–3.');
+        Umbra.tell('Equipa una herramienta con 1–4.');
         return true;
       }
       if (tools.hunting) {
@@ -137,25 +137,25 @@
       const y = state.view.h - 53;
       ctx.save();
       ctx.fillStyle = '#555049';
-      ctx.fillRect(8, y, 176, 27);
+      ctx.fillRect(8, y, 166, 27);
       ctx.fillStyle = '#15171a';
-      ctx.fillRect(9, y + 1, 174, 25);
+      ctx.fillRect(9, y + 1, 164, 25);
       ctx.fillStyle = '#d8d2c4';
       ctx.textAlign = 'left';
       ctx.font = '9px monospace';
-      ctx.fillText(slots[selected]?.name || 'Sin herramienta equipada', 15, y + 11, 158);
+      ctx.fillText(slots[selected]?.name || 'Sin herramienta equipada', 15, y + 11, 152);
       ctx.fillStyle = hunting ? '#e59f83' : detected ? '#edc578' : '#a5bacb';
-      ctx.fillText(reading || (selected < 0 ? 'Equipo en el campamento' : 'Sin lectura'), 15, y + 22, 158);
-      const left = Math.round((state.view.w - 86) / 2);
+      ctx.fillText(reading || (selected < 0 ? 'Equipo en el campamento' : 'Sin lectura'), 15, y + 22, 152);
+      const left = Math.round((state.view.w - (slots.length * 30 - 4)) / 2);
       ctx.fillStyle = '#d8d2c4';
-      ctx.fillText('Inventario: ' + slots.filter(Boolean).length + '/3', left, y - 4);
+      ctx.fillText('Inventario: ' + slots.filter(Boolean).length + '/' + slots.length, left, y - 4);
       for (const [index, tool] of slots.entries()) {
         const x = left + index * 30;
         ctx.fillStyle = index === selected ? '#edc578' : '#555049';
         ctx.fillRect(x, y, 26, 26);
         ctx.fillStyle = tool ? '#aa9b80' : '#15171a';
         ctx.fillRect(x + 1, y + 1, 24, 24);
-        if (tool) Umbra.journal.drawIcon(ctx, tool.evidence[0], x + 11, y + 7);
+        if (tool) Umbra.art.tool(ctx, tool.id, x + 8, y + 8, 1);
         ctx.fillStyle = tool ? '#241c14' : '#aaa095';
         ctx.fillText(String(index + 1), x + 3, y + 10);
       }

@@ -18,7 +18,7 @@
     ['M', 'Activar o silenciar sonido'],
   ];
   const JOURNAL_CONTROLS = [
-    ['1–3', 'Equipar un espacio del inventario'],
+    ['1–4', 'Equipar un espacio del inventario'],
     ['Tab / J', 'Abrir o cerrar el diario'],
     ['Q / E', 'Cambiar pestaña'],
     ['Flechas', 'Navegar en el diario'],
@@ -386,7 +386,7 @@
       y += 16;
     }
     if (board) {
-      text(ctx, 'Inventario: ' + slots.filter(Boolean).length + '/3', LEFT.x, 199, C.ink, 'bold 10px monospace');
+      text(ctx, 'Inventario: ' + slots.filter(Boolean).length + '/' + slots.length, LEFT.x, 199, C.ink, 'bold 10px monospace');
       ctx.fillStyle = C.select;
       ctx.fillRect(RIGHT.x, 194, RIGHT.w, 19);
       text(ctx, slot < 0 ? 'Enter · Recoger' : 'Enter · Devolver', RIGHT.x + 6, 207, C.ink, 'bold 9px monospace');
