@@ -22,7 +22,7 @@
     huntRetry: [15, 25],  // si la tirada falla, vuelve a intentar antes
     warn: [2, 3],
     huntLength: [20, 30],
-    huntSpeed: [70, 85],  // correr son 102 u/s: huir es posible
+    huntSpeed: [62, 72],  // caminar 72, correr 102 (con stamina): agotarse es peligroso, no mortal
     sight: 320,           // alcance de la vista de la entidad
     catchDist: 14,
     replan: 0.35,         // s entre recálculos de ruta al perseguir
@@ -54,7 +54,17 @@
   function gridFor(state, floor) {
     const open = !!(state.closetOpen && state.closetOpen[floor]);
     const k = floor * 2 + (open ? 1 : 0);
-    if (!grids[k]) grids[k] = state.G.grid(CFG.diameter, { floor, closetOpen: open });
+    if (!grids[k]) {
+      const g = state.G.grid(CFG.diameter, { floor, closetOpen: open });
+      // La entidad no sale de la casa: fuera de las habitaciones (porche, campamento, terraza) no hay celdas libres.
+      for (let j = 0; j < g.rows; j++) {
+        for (let i = 0; i < g.cols; i++) {
+          const n = j * g.cols + i;
+          if (g.free[n] && state.G.outdoors(floor, g.x + i * g.step, g.y + j * g.step)) g.free[n] = 0;
+        }
+      }
+      grids[k] = g;
+    }
     return grids[k];
   }
 
@@ -81,6 +91,10 @@
     if (!Umbra.power) return false;
     const r = roomAt(state, floor, x, y);
     return !!r && Umbra.power.litRooms(state, floor).includes(r);
+  }
+
+  function playerOutdoors(state) {
+    return state.G.outdoors(state.floor, state.player.x, state.player.y);
   }
 
   // Protección del armario (diseño V4): el jugador está dentro de A1/A2 y el armario está cerrado.
@@ -282,9 +296,10 @@
   function huntTarget(state, e) {
     const p = state.player;
     const hidden = playerHidden(state);
+    const outside = playerOutdoors(state);
     const sameFloor = state.floor === e.floor;
     let sees = false;
-    if (!hidden && sameFloor) {
+    if (!hidden && !outside && sameFloor) {
       const d = Math.hypot(p.x - e.x, p.y - e.y);
       sees = traits(e).wallhack || (d < CFG.sight && !lineBlocked(e.x, e.y, p.x, p.y, state.model.walls));
     }
@@ -301,8 +316,8 @@
       e.lingering = false;
       return { x: p.x, y: p.y, chase: true };
     }
-    if (hidden && !e.lingering && sameFloor) {
-      // No lo encuentra: ronda cerca un rato y se va.
+    if ((hidden || outside) && !e.lingering && sameFloor) {
+      // No lo encuentra (escondido o fuera de la casa): ronda dentro un rato y se va.
       e.lingering = true;
       e.huntLeft = Math.min(e.huntLeft, CFG.hiddenLinger);
     }
@@ -366,7 +381,7 @@
 
     // ¿Atrapó al jugador?
     const p = state.player;
-    if (e.floor === state.floor && !playerHidden(state) && Math.hypot(p.x - e.x, p.y - e.y) < CFG.catchDist) {
+    if (e.floor === state.floor && !playerHidden(state) && !playerOutdoors(state) && Math.hypot(p.x - e.x, p.y - e.y) < CFG.catchDist) {
       caught(state, e);
     }
   }
@@ -443,7 +458,8 @@
         else e.wait = 1;
       }
 
-      if ((e.nextEvent -= dt) <= 0) {
+      // Afuera no se oye nada: los eventos esperan a que el jugador vuelva a la casa.
+      if ((e.nextEvent -= dt) <= 0 && !playerOutdoors(state)) {
         subtleEvent(state, e);
         e.nextEvent = rand(...CFG.eventEvery);
       }
@@ -459,7 +475,8 @@
       }
 
       if ((e.nextHunt -= dt) <= 0) {
-        if (huntRoll(state, e)) beginWarn(state, e);
+        if (playerOutdoors(state)) e.nextHunt = rand(...CFG.huntRetry); // no caza a quien está afuera
+        else if (huntRoll(state, e)) beginWarn(state, e);
         else e.nextHunt = rand(...CFG.huntRetry);
       }
     },
