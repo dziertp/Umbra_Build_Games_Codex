@@ -12,6 +12,8 @@ Las tarjetas de Demonology (Roblox) del diario del equipo sirvieron como referen
 | `brasa-velada` | La Brasa Velada | Orbes, silueta en el láser, huellas | Sus cacerías son más probables cuando el jugador está a oscuras (`prefersDark`). | Figura compacta de humo con una cavidad de luz fría en el pecho y dos colas curvas. |
 | `enramado` | El Enramado | Escritura, flores marchitas, respuesta en la radio | Corre un poco más rápido durante la cacería (`speed: 1.08`). | Silueta encorvada; mangas y espalda se abren en raíces finas, sin cuernos ni astas. |
 
+**Estado de la entrega conceptual:** completadas por Anais como conceptos visuales v1 para las cuatro entidades. El prototipo de sprite de La Pliegasombra de abajo inicia una etapa separada de adaptación al juego.
+
 ## Láminas visuales
 
 Cada PNG es una hoja conceptual de 1024 × 1024 con cuatro vistas: frente, espalda y dos perfiles. Las redibujé para acercarlas al estilo de Hannah, Turner y Chloe: sprites compactos, píxel grueso, bloques limpios y paleta limitada sobre fondo negro opaco. Las figuras no están separadas en celdas; por eso son referencias de diseño, no sprites listos para importar al juego. Se generaron y ajustaron para este proyecto con OpenAI API (`gpt-image-2`) a partir de descripciones originales y las láminas de personajes del repositorio como guía visual.
@@ -20,6 +22,19 @@ Cada PNG es una hoja conceptual de 1024 × 1024 con cuatro vistas: frente, espal
 - [El Hilvanado](../../assets/entities/concept_sheets/hilvanado_4_vistas.png)
 - [La Brasa Velada](../../assets/entities/concept_sheets/brasa_velada_4_vistas.png)
 - [El Enramado](../../assets/entities/concept_sheets/enramado_4_vistas.png)
+
+## Pruebas de sprite a escala de juego
+
+Cada hoja PNG es RGBA transparente de **48 × 20 píxeles**, con cuatro cuadros de **12 × 20 px** en este orden: frente, espalda, perfil izquierdo y perfil derecho. Las formas compactas, los píxeles cuadrados y la paleta limitada siguen el estilo de los prototipos de personajes.
+
+| Entidad | Hoja de cuatro vistas |
+| --- | --- |
+| La Pliegasombra | [pliegasombra_4_vistas_12x20.png](../../assets/entities/sprites/pliegasombra_4_vistas_12x20.png) |
+| El Hilvanado | [hilvanado_4_vistas_12x20.png](../../assets/entities/sprites/hilvanado_4_vistas_12x20.png) |
+| La Brasa Velada | [brasa_velada_4_vistas_12x20.png](../../assets/entities/sprites/brasa_velada_4_vistas_12x20.png) |
+| El Enramado | [enramado_4_vistas_12x20.png](../../assets/entities/sprites/enramado_4_vistas_12x20.png) |
+
+Son pruebas visuales de lectura a tamaño real; todavía no están conectadas al juego. La integración debe coordinarse con Dacier, responsable de la lógica y el dibujo de la entidad.
 
 ## Datos del juego
 
