@@ -1030,6 +1030,109 @@
     }
   }
 
+  // ---------- Techo de la casa (visto desde afuera) ----------
+  // Cubre la planta baja (unión de habitaciones, garaje incluido) mientras el jugador está afuera;
+  // se desvanece en ~0,3 s al entrar. Recortado antes de la puerta principal: el porche queda visible.
+  const roof = { alpha: 0, cache: null };
+  const ROOF_CUT_Y = 1011; // borde inferior sobre la puerta principal
+
+  function roofRects(D) {
+    return D.rooms.map((r) => {
+      const x = r[1] - 4, y = r[2] - 4, w = r[3] + 8;
+      const h = Math.min(r[2] + r[4] + 4, ROOF_CUT_Y) - y;
+      return [x, y, w, h];
+    });
+  }
+
+  function buildRoof(state) {
+    const D = state.G.floors[0];
+    const rects = roofRects(D);
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const [x, y, w, h] of rects) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x + w); y1 = Math.max(y1, y + h); }
+    x0 -= 4; y0 -= 12; x1 += 4; y1 += 4;
+    const c = document.createElement('canvas');
+    c.width = x1 - x0;
+    c.height = y1 - y0;
+    const g = c.getContext('2d');
+    g.translate(-x0, -y0);
+    const path = (dx, dy, grow) => {
+      g.beginPath();
+      for (const [x, y, w, h] of rects) g.rect(x + dx - grow, y + dy - grow, w + grow * 2, h + grow * 2);
+    };
+    // Sombra de 2 px hacia el campamento y canaleta (borde).
+    g.fillStyle = 'rgba(0,0,0,0.6)'; path(2, 2, 0); g.fill();
+    g.fillStyle = '#5a5e64'; path(0, 0, 1); g.fill();
+    g.save(); path(0, 0, 0); g.clip();
+    // Tejas en hileras (rojo oscuro apagado), juntas escalonadas, alguna rota o con musgo.
+    g.fillStyle = '#4a2a26'; g.fillRect(x0, y0, x1 - x0, y1 - y0);
+    for (let y = y0; y < y1; y += 5) {
+      g.fillStyle = '#3a201d'; g.fillRect(x0, y + 4, x1 - x0, 1);
+      g.fillStyle = '#5a3530'; g.fillRect(x0, y, x1 - x0, 1);
+      g.fillStyle = '#2e1a18';
+      const off = ((y - y0) / 5) % 2 ? 4 : 0;
+      for (let x = x0 + off; x < x1; x += 8) g.fillRect(x, y + 1, 1, 3);
+    }
+    for (let i = 0; i < 140; i++) {
+      const px = x0 + ((i * 97 + i * i * 13) % (x1 - x0));
+      const py = y0 + ((i * 61 + i * i * 7) % (y1 - y0));
+      g.fillStyle = i % 3 === 0 ? '#3a4a2a' : i % 3 === 1 ? '#1a100e' : '#4e5a32';
+      g.fillRect(px, py, i % 3 === 1 ? 3 : 2, i % 3 === 1 ? 2 : 1);
+    }
+    // Cumbreras a lo largo del eje mayor de cada ala grande.
+    for (const [x, y, w, h] of rects) {
+      if (w * h < 20000) continue;
+      g.fillStyle = '#2a1816';
+      if (w >= h) g.fillRect(x + 6, y + Math.floor(h / 2) - 1, w - 12, 3);
+      else g.fillRect(x + Math.floor(w / 2) - 1, y + 6, 3, h - 12);
+      g.fillStyle = '#6a4038';
+      if (w >= h) g.fillRect(x + 6, y + Math.floor(h / 2) - 1, w - 12, 1);
+      else g.fillRect(x + Math.floor(w / 2) - 1, y + 6, 1, h - 12);
+    }
+    g.restore();
+    // Chimenea de ladrillo.
+    const cx = 300, cy = 600;
+    g.fillStyle = 'rgba(0,0,0,0.6)'; g.fillRect(cx + 2, cy + 2, 18, 16);
+    g.fillStyle = '#2a1a16'; g.fillRect(cx - 1, cy - 1, 20, 18);
+    g.fillStyle = '#6a3a2a'; g.fillRect(cx, cy, 18, 16);
+    g.fillStyle = '#4a2a20';
+    for (let y = cy + 3; y < cy + 16; y += 4) { g.fillRect(cx, y, 18, 1); for (let x = cx + ((y / 4) % 2 ? 2 : 6); x < cx + 18; x += 8) g.fillRect(x, y - 3, 1, 3); }
+    g.fillStyle = '#121010'; g.fillRect(cx + 4, cy + 4, 10, 8);
+    return { canvas: c, x: x0, y: y0 };
+  }
+
+  function drawRoof(ctx, state) {
+    if (state.floor !== 0 || roof.alpha <= 0) return;
+    if (!roof.cache) roof.cache = buildRoof(state);
+    const { ox, oy } = state.view;
+    const rc = roof.cache;
+    const a = Math.ceil(roof.alpha * 4) / 4;
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.drawImage(rc.canvas, rc.x + ox, rc.y + oy);
+    // Luz sobre el techo: luna tenue en todo y más cálido bajo los faroles.
+    const D = state.G.floors[0];
+    ctx.beginPath();
+    for (const [x, y, w, h] of roofRects(D)) ctx.rect(x + ox - 1, y + oy - 1, w + 2, h + 2);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(10,22,36,0.45)';
+    ctx.fillRect(0, 0, state.view.w, state.view.h);
+    ctx.fillStyle = 'rgba(225,182,110,0.10)';
+    for (const l of (D.base && D.base.lamps) || []) {
+      ctx.beginPath();
+      ctx.arc(l.x + ox, l.y + oy, l.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+    // Luz tenue sobre la entrada (bajo el borde del techo).
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.fillStyle = 'rgba(225,182,110,0.18)';
+    ctx.fillRect(595 + ox, ROOF_CUT_Y + oy, 90, 22);
+    ctx.fillStyle = '#e1b66e';
+    ctx.fillRect(638 + ox, ROOF_CUT_Y + oy, 4, 2);
+    ctx.restore();
+  }
+
   Umbra.render = { map, player, sprite: spriteCanvas, mood };
 
   Umbra.register({
@@ -1040,12 +1143,16 @@
       roomLabel.t = Infinity;
       hud.alertUntil = -1;
       hud.reliefUntil = -1;
+      roof.alpha = 1; // se empieza en el campamento
     },
     update(dt, state) {
       hud.t += dt;
+      const outside = state.floor === 0 && state.G.outdoors(0, state.player.x, state.player.y);
+      roof.alpha = Math.max(0, Math.min(1, roof.alpha + (outside ? dt : -dt) / 0.3));
       updateRoomLabel(dt, state);
     },
     drawLight(ctx, state) {
+      drawRoof(ctx, state);
       eyes(ctx, state);
     },
     drawUI(ctx, state) {
