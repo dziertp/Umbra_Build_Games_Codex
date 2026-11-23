@@ -66,12 +66,12 @@
     state.journal.mode = mode;
     state.journal.boardMessage = '';
     state.journal.hits = [];
-    if (mode === 'board') state.journal.blink = { start: performance.now(), closing: false };
+    if (mode !== 'book') state.journal.blink = { start: performance.now(), closing: false };
     state.keys.clear();
   }
 
   function closePanel(j) {
-    if (j.mode === 'board') {
+    if (j.mode === 'board' || j.mode === 'objectives') {
       j.blink = { start: performance.now(), closing: true };
       j.hits = [];
       return;
@@ -532,14 +532,25 @@
 
   function drawObjectives(ctx, state) {
     const objectives = Umbra.investigation.objectives(state);
-    pageTitle(ctx, LEFT, 'Objetivos del campamento');
-    pageTitle(ctx, RIGHT, 'Progreso de investigación');
+    ctx.fillStyle = '#151719';
+    ctx.fillRect(0, 0, state.view.w, state.view.h);
+    drawCampBack(ctx, state.journal);
+    ctx.fillStyle = '#5c5f5d';
+    ctx.fillRect(37, 42, 406, 184);
+    ctx.fillStyle = '#e1dfd2';
+    ctx.fillRect(42, 47, 396, 174);
+    ctx.fillStyle = '#bbb9ad';
+    ctx.fillRect(52, 83, 376, 1);
+    text(ctx, 'Objetivos del campamento', 56, 73, '#262b2b', 'bold 14px monospace');
     objectives.forEach(({ label, done }, index) => {
-      text(ctx, (done ? '[✓] ' : '[ ] ') + label, LEFT.x, 57 + index * 25,
-        done ? C.green : C.ink, '9px monospace', LEFT.w);
+      const y = 101 + index * 31;
+      ctx.strokeStyle = done ? '#3a6049' : '#6a6e65';
+      ctx.strokeRect(57.5, y + 0.5, 13, 13);
+      if (done) text(ctx, '✓', 59, y + 11, '#315441', 'bold 12px monospace');
+      text(ctx, label, 82, y + 11, '#262b2b', '12px monospace');
     });
-    text(ctx, objectives.filter(item => item.done).length + '/3 completados', RIGHT.x, 57, C.ink, 'bold 11px monospace');
-    paragraph(ctx, 'Selecciona una entidad en Pruebas y vuelve al camión para terminar la investigación.', RIGHT, 85, 4);
+    text(ctx, objectives.filter(item => item.done).length + '/3 completados', 56, 208, '#4f564e', 'bold 10px monospace');
+    text(ctx, 'Esc · Volver', 37, 246, '#ded7c7', '9px monospace');
   }
 
   function drawProof(ctx, j) {
@@ -757,7 +768,7 @@
       const j = state.journal;
       if (!j || !j.open) return;
       j.hits = [];
-      if (j.mode === 'board') {
+      if (j.mode === 'board' || j.mode === 'objectives') {
         const blink = j.blink;
         const progress = blink ? Math.min(1, (performance.now() - blink.start) / blinkMs) : 1;
         if (progress === 1 && blink) {
@@ -769,7 +780,10 @@
         }
         ctx.save();
         ctx.textAlign = 'left';
-        if (!blink || (blink.closing ? progress < 0.5 : progress >= 0.5)) drawBoard(ctx, state);
+        if (!blink || (blink.closing ? progress < 0.5 : progress >= 0.5)) {
+          if (j.mode === 'board') drawBoard(ctx, state);
+          else drawObjectives(ctx, state);
+        }
         if (progress < 1) {
           ctx.fillStyle = '#000';
           ctx.fillRect(0, 0, state.view.w, Math.ceil(state.view.h * (1 - Math.abs(2 * progress - 1))));
@@ -782,8 +796,7 @@
       ctx.fillStyle = C.shade;
       ctx.fillRect(0, 0, state.view.w, state.view.h);
       drawBook(ctx, j);
-      if (j.mode === 'objectives') drawObjectives(ctx, state);
-      else if (j.tab === 0) drawEntities(ctx, j);
+      if (j.tab === 0) drawEntities(ctx, j);
       else if (j.tab === 1) drawEquipment(ctx, state);
       else if (j.tab === 2) drawProof(ctx, j);
       else if (j.tab === 3) {
@@ -793,8 +806,7 @@
         drawSettings(ctx, j);
       }
       ctx.textAlign = 'center';
-      const footer = j.mode === 'objectives' ? 'Esc: cerrar'
-        : j.tab === 4 ? '↑/↓ elegir · ←/→ o clic ajustar · Q/E pestaña · Esc cerrar'
+      const footer = j.tab === 4 ? '↑/↓ elegir · ←/→ o clic ajustar · Q/E pestaña · Esc cerrar'
         : 'Q/E pestaña · Flechas · Enter marcar/elegir · Clic · Tab/J cerrar';
       ctx.font = '8px monospace';
       const width = Math.ceil(ctx.measureText(footer).width) + 10;

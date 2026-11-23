@@ -44,9 +44,10 @@ const use = () => press('KeyF');
 const take = () => press('KeyE');
 const check = expected => assert.deepEqual(bag(), expected);
 const journal = U.systems.find(system => system.drawOverlay);
+const drawJournal = journal.drawOverlay;
 const finishBlink = () => {
   now += 401;
-  journal.drawOverlay(drawing, state);
+  drawJournal(drawing, state);
 };
 
 press('Enter');
@@ -197,8 +198,11 @@ assert.equal(state.scene, 'play');
 place(objectives[0] - 10, objectives[1] + 20);
 take();
 assert.equal(state.journal.mode, 'objectives');
+assert.ok(state.journal.blink);
+finishBlink();
 assert.deepEqual(Array.from(U.investigation.objectives(state), item => item.done), [false, false, true]);
 press('Escape');
+finishBlink();
 const standByTruck = () => place(truck[0] + truck[2] + 10, truck[1] + 20);
 standByTruck();
 take();
