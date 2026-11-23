@@ -14,7 +14,7 @@ Las tarjetas de Demonology (Roblox) del diario del equipo sirvieron como referen
 
 ## Láminas visuales
 
-Cada PNG es una hoja conceptual de 1024 × 1024 con cuatro vistas aproximadas: frente, espalda y dos perfiles. El fondo es opaco y las figuras no están separadas en celdas; por eso son referencias de diseño, no sprites listos para importar al juego. Se generaron para este proyecto con OpenAI API (`gpt-image-2`) a partir de descripciones originales y luego se asignaron nombres y rasgos para Umbra.
+Cada PNG es una hoja conceptual de 1024 × 1024 con cuatro vistas: frente, espalda y dos perfiles. Las redibujé para acercarlas al estilo de Hannah, Turner y Chloe: sprites compactos, píxel grueso, bloques limpios y paleta limitada sobre fondo negro opaco. Las figuras no están separadas en celdas; por eso son referencias de diseño, no sprites listos para importar al juego. Se generaron y ajustaron para este proyecto con OpenAI API (`gpt-image-2`) a partir de descripciones originales y las láminas de personajes del repositorio como guía visual.
 
 - [La Pliegasombra](../../assets/entities/concept_sheets/pliegasombra_4_vistas.png)
 - [El Hilvanado](../../assets/entities/concept_sheets/hilvanado_4_vistas.png)
@@ -28,4 +28,5 @@ Los cuatro registros están en `src/data/entities.js`; cada uno usa exactamente 
 ## Créditos de generación
 
 Conceptos visuales producidos con OpenAI API, modelo `gpt-image-2`, por encargo de Anais Tapia. Según los términos de OpenAI, la salida se asigna al cliente; los PNG no quedan cubiertos por la licencia MIT del código del repositorio. La selección final y los nombres son trabajo de diseño para Umbra.
+
 
