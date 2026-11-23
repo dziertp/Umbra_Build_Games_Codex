@@ -389,6 +389,44 @@
     }
   }
 
+  // ---------- Sprites de Anais (assets/entities/sprites/<id>_4_vistas_12x20.png) ----------
+  // Hoja de 48×20: frente, espalda, perfil izquierdo, perfil derecho (cuadros de 12×20).
+  const VIEWS = { down: 0, up: 1, left: 2, right: 3 };
+  // Ojos de cada hoja por vista [col, fila] (de espalda no se ven); sin entrada, ojos genéricos.
+  const SPRITE_EYES = {
+    brasa_velada: [[[4, 4], [7, 4]], [], [[3, 4]], [[8, 4]]],
+    enramado: [[[4, 3], [7, 3]], [], [[4, 3]], [[7, 3]]],
+    hilvanado: [[[5, 4]], [], [[3, 4]], [[8, 4]]],
+    pliegasombra: [[[4, 4], [7, 4]], [], [[3, 4]], [[8, 4]]],
+  };
+  const GENERIC_EYES = [[[3, 3], [8, 3]], [], [[3, 3]], [[8, 3]]];
+  const sprites = {}; // nombre de archivo → { img, ok }
+
+  function spriteKey(type) {
+    return String(type.id || '').replace(/-/g, '_');
+  }
+  function loadSprite(type) {
+    const key = spriteKey(type);
+    if (!key || sprites[key]) return;
+    const entry = (sprites[key] = { img: new Image(), ok: false });
+    entry.img.onload = () => { entry.ok = true; };
+    entry.img.src = 'assets/entities/sprites/' + key + '_4_vistas_12x20.png';
+  }
+  function spriteFor(e) {
+    const entry = sprites[spriteKey(e.type)];
+    return entry && entry.ok ? entry.img : null;
+  }
+  // Vista según hacia dónde se movió la entidad en el último fotograma.
+  function updateFacing(e) {
+    const dx = e.x - (e.lastX ?? e.x);
+    const dy = e.y - (e.lastY ?? e.y);
+    if (Math.abs(dx) + Math.abs(dy) > 0.01) {
+      e.view = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+    }
+    e.lastX = e.x;
+    e.lastY = e.y;
+  }
+
   // ---------- Dibujo ----------
   function drawSprite(ctx, x, y, color, eyes) {
     const x0 = Math.round(x) - 6;
@@ -422,6 +460,8 @@
       };
       scheduleHunt(e, true);
       Object.assign(e, placeInRoom(state, e));
+      e.view = 'down';
+      loadSprite(e.type);
       state.entity = e; // reemplaza cualquier entidad provisional de otro sistema
       lastPlayerFloor = state.floor;
     },
@@ -452,6 +492,7 @@
       }
       if (e.mode === 'hunt') {
         updateHunt(dt, state, e);
+        updateFacing(e);
         return;
       }
 
@@ -495,7 +536,9 @@
     drawWorld(ctx, state) {
       const e = state.entity;
       if (!e || e.mode !== 'hunt' || !e.visible || e.floor !== state.floor) return;
-      drawSprite(ctx, e.x, e.y, '#0b0a0d', '#0b0a0d');
+      const img = spriteFor(e);
+      if (img) ctx.drawImage(img, VIEWS[e.view || 'down'] * 12, 0, 12, 20, Math.round(e.x) - 6, Math.round(e.y) - 14, 12, 20);
+      else drawSprite(ctx, e.x, e.y, '#0b0a0d', '#0b0a0d');
     },
     // Ojos pálidos sobre la oscuridad, solo si el jugador tiene línea directa.
     drawLight(ctx, state) {
@@ -505,9 +548,9 @@
       if (lineBlocked(p.x, p.y, e.x, e.y, state.model.walls)) return;
       const x0 = Math.round(e.x + state.view.ox) - 6;
       const y0 = Math.round(e.y + state.view.oy) - 14;
+      const eyes = (spriteFor(e) && SPRITE_EYES[spriteKey(e.type)]) || GENERIC_EYES;
       ctx.fillStyle = '#e8e3d8';
-      ctx.fillRect(x0 + 3, y0 + 3, 1, 1);
-      ctx.fillRect(x0 + 8, y0 + 3, 1, 1);
+      for (const [cx, cy] of eyes[VIEWS[e.view || 'down']]) ctx.fillRect(x0 + cx, y0 + cy, 1, 1);
     },
     drawUI(ctx, state) {
       const e = state.entity;
@@ -559,7 +602,10 @@
       ctx.save();
       ctx.fillStyle = '#07090c';
       ctx.fillRect(0, 0, w, h);
-      drawSprite(ctx, w / 2, 78, '#1b1a20', '#e8e3d8');
+      const e = state.entity;
+      const img = e && spriteFor(e);
+      if (img) ctx.drawImage(img, 0, 0, 12, 20, Math.round(w / 2) - 6, 64, 12, 20);
+      else drawSprite(ctx, w / 2, 78, '#1b1a20', '#e8e3d8');
       ctx.textAlign = 'center';
       ctx.font = 'bold 24px monospace';
       ctx.fillStyle = '#b8473a';
