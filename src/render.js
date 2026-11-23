@@ -41,6 +41,13 @@
     pot: '#4a3626', leaf: '#5f5a3a', leafDry: '#6e5a3a',
     stain: '#1a1613',
     runner: '#3a2c22', runnerBorder: '#4a3a2c', runnerLine: '#2c2119',
+    // Campamento exterior
+    grass: '#1c261b', grassDark: '#162015', grassTuft: '#26331f', hedge: '#121c12', hedgeTop: '#1b2a1a',
+    asphalt: '#222426', asphaltMark: '#3e3c34', walk: '#36373a', walkLine: '#2c2d30',
+    truck: '#2f3b42', truckRoof: '#3a4850', truckLine: '#222b30', wheel: '#0c0c0e', headlight: '#8a8478',
+    peg: '#5a4a36', pegHole: '#3e3226', toolShape: '#1e1916',
+    board: '#7d7f7c', boardFrame: '#3a3a3c', ink: ['#2e4a6a', '#7c2b22', '#2d3a2a'],
+    pole: '#2a2a2e', lampHead: '#e1b66e',
   };
 
   // Material del suelo según el nombre de la habitación (datos del mapa).
@@ -424,6 +431,107 @@
     }
   }
 
+  // ---------- Campamento base (D.base) ----------
+  function drawBase(g, b) {
+    const [ax, ay, aw, ah] = b.area;
+    // Pasto con matas.
+    g.fillStyle = C.grass;
+    g.fillRect(ax, ay, aw, ah);
+    g.fillStyle = C.grassDark;
+    for (let i = 0; i < (aw * ah) / 120; i++) g.fillRect(ax + ((i * 37) % aw), ay + ((i * 53 + i * i) % ah), 2, 1);
+    g.fillStyle = C.grassTuft;
+    for (let i = 0; i < (aw * ah) / 400; i++) g.fillRect(ax + ((i * 71) % aw), ay + ((i * 29 + i * 3) % ah), 1, 2);
+    // Entrada de autos (asfalto) con marcas de estacionamiento.
+    const [dx, dy, dw, dh] = b.driveway;
+    g.fillStyle = C.asphalt;
+    g.fillRect(dx, dy, dw, dh);
+    g.fillStyle = C.asphaltMark;
+    for (let y = dy + 8; y < dy + dh - 6; y += 14) g.fillRect(dx + dw - 40, y, 1, 7);
+    g.fillRect(dx + 72, dy + 8, 1, dh - 16);
+    // Vereda bajo el porche.
+    const [sx, sy, sw, sh] = b.sidewalk;
+    g.fillStyle = C.walk;
+    g.fillRect(sx, sy, sw, sh);
+    g.fillStyle = C.walkLine;
+    g.fillRect(sx, sy + sh - 1, sw, 1);
+    for (let x = sx + 20; x < sx + sw; x += 20) g.fillRect(x, sy, 1, sh);
+    // Seto en el borde (los límites del campamento), salvo hacia el porche.
+    g.fillStyle = C.hedge;
+    g.fillRect(ax, ay + sh, 4, ah - sh);
+    g.fillRect(ax + aw - 4, ay + sh, 4, ah - sh);
+    g.fillRect(ax, ay + ah - 4, aw, 4);
+    g.fillStyle = C.hedgeTop;
+    for (let y = ay + sh + 2; y < ay + ah - 4; y += 5) {
+      g.fillRect(ax + 1, y, 2, 2);
+      g.fillRect(ax + aw - 3, y + 2, 2, 2);
+    }
+    for (let x = ax + 2; x < ax + aw - 2; x += 5) g.fillRect(x, ay + ah - 3, 2, 2);
+
+    // Camión de equipo (vista superior; cabina hacia la calle, abajo).
+    const [tx, ty, tw, th] = b.truck;
+    g.fillStyle = C.shadow;
+    g.fillRect(tx + 2, ty + 2, tw, th);
+    g.fillStyle = C.wheel;
+    for (const wy of [ty + 14, ty + th - 26]) {
+      g.fillRect(tx - 2, wy, 3, 12);
+      g.fillRect(tx + tw - 1, wy, 3, 12);
+    }
+    g.fillStyle = C.edge;
+    g.fillRect(tx, ty, tw, th);
+    g.fillStyle = C.truck;
+    g.fillRect(tx + 1, ty + 1, tw - 2, th - 2);
+    g.fillStyle = C.truckRoof;
+    g.fillRect(tx + 4, ty + 4, tw - 8, th - 34);
+    g.fillStyle = C.truckLine;
+    for (let y = ty + 10; y < ty + th - 34; y += 8) g.fillRect(tx + 6, y, tw - 12, 1);
+    g.fillRect(tx + Math.floor(tw / 2), ty + 1, 1, 6); // puertas traseras
+    g.fillStyle = C.glass;
+    g.fillRect(tx + 4, ty + th - 24, tw - 8, 9); // parabrisas
+    g.fillStyle = C.headlight;
+    g.fillRect(tx + 3, ty + th - 3, 5, 2);
+    g.fillRect(tx + tw - 8, ty + th - 3, 5, 2);
+
+    // Panel perforado con siluetas de herramientas (frente hacia abajo).
+    const [bx, by, bw, bh] = b.board;
+    g.fillStyle = C.shadow;
+    g.fillRect(bx + 1, by + 1, bw, bh);
+    g.fillStyle = C.furn;
+    g.fillRect(bx, by, bw, bh);
+    g.fillStyle = C.peg;
+    g.fillRect(bx + 1, by + 1, bw - 2, bh - 2);
+    g.fillStyle = C.pegHole;
+    for (let y = by + 2; y < by + bh - 1; y += 3) for (let x = bx + 2; x < bx + bw - 1; x += 3) g.fillRect(x, y, 1, 1);
+    g.fillStyle = C.toolShape;
+    const tools = [[4, 3, 6, 6], [13, 2, 3, 8], [20, 3, 8, 5], [31, 2, 2, 8], [36, 4, 7, 4], [46, 2, 5, 7], [55, 3, 9, 5], [67, 2, 4, 8]];
+    for (const [ox, oy, w, h] of tools) if (ox + w < bw - 1) g.fillRect(bx + ox, by + oy, w, Math.min(h, bh - oy - 1));
+
+    // Pizarra de objetivos (frente hacia la izquierda).
+    const [ox, oy, ow, oh] = b.objectives;
+    g.fillStyle = C.shadow;
+    g.fillRect(ox + 1, oy + 1, ow, oh);
+    g.fillStyle = C.boardFrame;
+    g.fillRect(ox, oy, ow, oh);
+    g.fillStyle = C.board;
+    g.fillRect(ox + 1, oy + 1, ow - 3, oh - 2);
+    for (let i = 0; i < 6; i++) {
+      g.fillStyle = C.ink[i % C.ink.length];
+      g.fillRect(ox + 2 + (i % 2) * 3, oy + 4 + i * 7, 4 - (i % 2), 1);
+    }
+
+    // Farol: base, brazo y cabeza.
+    const l = b.lamp;
+    if (l) {
+      const [px, py, pw, ph] = l.pole;
+      g.fillStyle = C.shadow;
+      g.fillRect(px + 1, py + 1, pw, ph);
+      g.fillStyle = C.pole;
+      g.fillRect(px, py, pw, ph);
+      g.fillRect(px + pw, py + 1, 6, 1);
+      g.fillStyle = C.lampHead;
+      g.fillRect(px + pw + 5, py, 3, 3);
+    }
+  }
+
   function buildFloor(state, floor) {
     const D = state.G.floors[floor];
     const [bx, by, bw, bh] = D.bounds;
@@ -433,7 +541,12 @@
     const g = c.getContext('2d');
     g.translate(-bx, -by);
     // Exterior pisable (terraza, porche): piedra.
-    for (const f of D.floors || []) fillPattern(g, f[0], f[1], f[2], f[3], 'stone');
+    const area = D.base && D.base.area;
+    for (const f of D.floors || []) {
+      if (area && f[0] === area[0] && f[1] === area[1] && f[2] === area[2] && f[3] === area[3]) continue;
+      fillPattern(g, f[0], f[1], f[2], f[3], 'stone');
+    }
+    if (D.base) drawBase(g, D.base);
     for (const r of D.rooms) fillPattern(g, r[1], r[2], r[3], r[4], styleFor(FLOOR_STYLE, r[0], 'wood'));
     for (const r of D.rooms) {
       const rs = styleFor(RUGS, r[0], null);
@@ -554,7 +667,10 @@
   }
 
   function updateRoomLabel(dt, state) {
-    const r = roomAtPlayer(state);
+    let r = roomAtPlayer(state);
+    const b = state.G.floors[state.floor].base;
+    const p = state.player;
+    if (!r && b && p.x >= b.area[0] && p.x < b.area[0] + b.area[2] && p.y >= b.area[1] && p.y < b.area[1] + b.area[3]) r = ['Campamento'];
     const key = r ? state.floor + ':' + r[0] : roomLabel.key;
     if (r && key !== roomLabel.key) {
       roomLabel.key = key;

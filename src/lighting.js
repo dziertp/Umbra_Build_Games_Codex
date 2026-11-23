@@ -69,6 +69,23 @@
     return (moonCache[floor] = strips);
   }
 
+  // Exterior pisable (porche, campamento, terraza): rectángulos de D.floors que no son habitaciones.
+  const outdoorCache = [];
+  function outdoorRects(D, floor) {
+    if (outdoorCache[floor]) return outdoorCache[floor];
+    const isRoom = (f) => D.rooms.some((r) => r[1] === f[0] && r[2] === f[1] && r[3] === f[2] && r[4] === f[3]);
+    return (outdoorCache[floor] = (D.floors || []).filter((f) => !isRoom(f)));
+  }
+
+  // Farol del campamento: polígono de lo que ilumina (recortado por muros), calculado una vez.
+  let lampPoly = null;
+  function lampPolygon(state) {
+    const b = state.G.floors[0].base;
+    if (!b || !b.lamp) return null;
+    if (!lampPoly) lampPoly = visibility(b.lamp.x, b.lamp.y, state.G.model({ floor: 0 }).walls, b.lamp.radius + 4);
+    return lampPoly;
+  }
+
   // Área de una habitación sin las habitaciones contenidas en ella (despensa dentro de cocina).
   function roomPath(c, r, rooms, ox, oy) {
     c.beginPath();
@@ -212,6 +229,7 @@
     if (light.on && !(flicker && flicker.torch)) return false;
     const p = state.player;
     const D = state.G.floors[state.floor];
+    if (state.G.outdoors && state.G.outdoors(state.floor, p.x, p.y)) return false; // afuera hay luna
     if (Umbra.power && !(flicker && flicker.lamps)) {
       for (const r of Umbra.power.litRooms(state, state.floor)) {
         if (p.x >= r[1] && p.x < r[1] + r[3] && p.y >= r[2] && p.y < r[2] + r[4]) return false;
@@ -292,6 +310,24 @@
             c.restore();
           }
         }), CFG.moonAlpha, CFG.moon);
+        // 2b) exterior: luna general muy suave
+        const outside = outdoorRects(D, state.floor);
+        if (outside.length) {
+          applyLevel(clipped((c) => {
+            for (const f of outside) c.fillRect(f[0] + ox, f[1] + oy, f[2], f[3]);
+          }), CFG.moonAlpha, CFG.moon);
+        }
+        // 2c) farol del campamento: luz cálida tenue, recortada por muros
+        const lamp = state.floor === 0 && D.base && D.base.lamp;
+        const lpoly = lamp && lampPolygon(state);
+        const drawLamp = (c) => {
+          polyPath(c, lpoly, ox, oy);
+          c.clip();
+          c.beginPath();
+          c.arc(lamp.x + ox, lamp.y + oy, lamp.radius, 0, Math.PI * 2);
+          c.fill();
+        };
+        if (lpoly) applyLevel(clipped(drawLamp), CFG.dim);
         // 3) habitaciones con la lámpara encendida: nivel tenue
         if (lamps.length) applyLevel(clipped(drawLamps), CFG.dim);
         // 4) linterna y halo
@@ -329,6 +365,12 @@
         if (lamps.length) {
           ctx.fillStyle = CFG.lampWarm;
           drawLamps(ctx);
+        }
+        if (lpoly) {
+          ctx.save();
+          ctx.fillStyle = CFG.lampWarm;
+          drawLamp(ctx);
+          ctx.restore();
         }
         if (torch) {
           ctx.fillStyle = CFG.warm;
