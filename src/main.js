@@ -177,36 +177,9 @@
     ctx.save();
     ctx.translate(state.view.ox, state.view.oy);
 
-    for (const r of D.rooms) rect(r.slice(1, 5), r[5]);
-    for (const w of D.windows || []) line(w, C.window, 3);
-    const [sx, sy, sw, sh] = D.stairs;
-    rect(D.stairs, C.stairs);
-    ctx.fillStyle = '#5e5247';
-    for (let y = sy + 6; y < sy + sh; y += 12) ctx.fillRect(sx + 2, y, sw - 4, 2);
-    for (const f of D.furniture) rect(f.slice(1, 5), C.furniture, C.furnitureEdge);
-    for (const c of D.circles) {
-      ctx.fillStyle = C.furniture;
-      ctx.beginPath();
-      ctx.arc(c[0], c[1], c[2], 0, Math.PI * 2);
-      ctx.fill();
-    }
-    if (D.closet) rect(D.closet, C.closet, state.closetOpen[state.floor] ? C.door : '#6fb3a3');
-    if (D.fuse) rect(D.fuse, C.fuse);
-    for (const s of state.model.walls) line(s, C.wall, s[4]);
+    Umbra.render.map(ctx, state); // suelos, muebles, armario, muros (src/render.js)
     Umbra.call('drawWorld', ctx, state);
-
-    // Jugador: referencia de 24 u con ojos hacia donde mira.
-    ctx.fillStyle = C.player;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, PLAYER.visual / 2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#10151c';
-    const ex = Math.cos(p.facing) * 5;
-    const ey = Math.sin(p.facing) * 5;
-    const px = -Math.sin(p.facing) * 3;
-    const py = Math.cos(p.facing) * 3;
-    ctx.fillRect(Math.round(p.x + ex + px - 1), Math.round(p.y + ey + py - 1), 2, 2);
-    ctx.fillRect(Math.round(p.x + ex - px - 1), Math.round(p.y + ey - py - 1), 2, 2);
+    Umbra.render.player(ctx, state); // sprite del investigador (src/render.js)
     ctx.restore();
     Umbra.call('drawLight', ctx, state);
     Umbra.call('drawUI', ctx, state);
