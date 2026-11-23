@@ -2,16 +2,32 @@
   'use strict';
 
   let context, master, noiseBuffer, drone, droneGain;
+  let footsteps, switchClick;
   let muted = false;
-  let previousPosition, stepDistance, previousLamps, outageSource;
+  let previousPosition, previousLamps, outageSource;
+  let walking = false;
   let pendingPower, lastPower;
   const voices = new Set();
 
+  function loadSample(file, volume) {
+    // La reproducción directa admite rutas file:// sin fetch ni servidor.
+    const sample = new Audio('assets/audio/' + file);
+    sample.preload = 'auto';
+    sample.volume = volume;
+    return sample;
+  }
+
   function unlock() {
-    const Audio = globalThis.AudioContext;
-    if (!Audio || muted) return;
+    if (muted) return;
+    if (!footsteps && typeof globalThis.Audio === 'function') {
+      footsteps = loadSample('freesound_community-pasos-steps-40285.mp3', 0.20);
+      footsteps.loop = true;
+      switchClick = loadSample('emilianodleon-select-button-ui-395763.mp3', 0.30);
+    }
+    const AudioContext = globalThis.AudioContext;
+    if (!AudioContext) return;
     if (!context) {
-      context = new Audio();
+      context = new AudioContext();
       master = context.createGain();
       master.gain.value = 0.65;
       master.connect(context.destination);
@@ -111,15 +127,22 @@
     const distance = previousPosition?.floor === floor
       ? Math.hypot(x - previousPosition.x, y - previousPosition.y) : 0;
     previousPosition = { x, y, floor };
-    if (!distance || distance > 28 || state.journal?.open) {
-      stepDistance = 0;
+    if (!footsteps || muted || !distance || distance > 28 || state.journal?.open) {
+      stopSteps();
       return;
     }
-    stepDistance += distance;
     const running = state.keys.has('ShiftLeft') || state.keys.has('ShiftRight');
-    if (stepDistance < (running ? 24 : 30)) return;
-    stepDistance = 0;
-    voice(output(state), 0.11, running ? 0.12 : 0.08, 250, 95, 'noise');
+    const rate = running ? 1.42 : 1;
+    if (footsteps.playbackRate !== rate) footsteps.playbackRate = rate;
+    if (walking) return;
+    walking = true;
+    footsteps.play().catch(() => {});
+  }
+
+  function stopSteps() {
+    if (!walking) return;
+    footsteps.pause();
+    walking = false;
   }
 
   function updatePower(state) {
@@ -137,8 +160,9 @@
       for (const [index, on] of lamps.entries()) {
         if (previousLamps[floor][index] === on) continue;
         previousLamps[floor][index] = on;
-        const { x, y } = power.switches[floor][index];
-        voice(output(state, { x, y, floor }), 0.045, 0.11, 1800, 600, 'noise');
+        if (muted || !power.on || !switchClick) continue;
+        switchClick.currentTime = 0;
+        switchClick.play().catch(() => {});
       }
     }
   }
@@ -188,6 +212,8 @@
     muted = !muted;
     if (muted) {
       stopDrone();
+      stopSteps();
+      switchClick?.pause();
       for (const source of voices) source.stop();
     } else {
       unlock();
@@ -200,7 +226,8 @@
     start(state) {
       unlock();
       previousPosition = null;
-      stepDistance = 0;
+      stopSteps();
+      switchClick?.pause();
       lastPower = state.power.on;
       pendingPower = undefined;
       previousLamps = state.power.lamps.map(lamps => lamps.slice());
@@ -209,7 +236,11 @@
     updateAudio(state) {
       const playing = state.scene === 'play';
       updateDrone(playing);
-      if (!playing) return;
+      if (!playing) {
+        stopSteps();
+        if (switchClick && !switchClick.paused) switchClick.pause();
+        return;
+      }
       updateSteps(state);
       updatePower(state);
     },

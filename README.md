@@ -78,6 +78,8 @@ Incluye todo lo que no se creó durante la jornada (propio o ajeno), todo recurs
 | Audios preliminares de ambiente y tropiezo | Material previo propio (audio) | [completar: autor / herramienta] | [completar: subir a `docs/audio/` si se usan] | [completar] | [completar] |
 | Claude (Anthropic) y Codex (OpenAI) | Herramientas de IA | Anthropic, OpenAI | https://claude.ai · https://openai.com/codex | Según sus términos de uso | Asistencia en código, pruebas y documentación. |
 | Ambiente y efectos sintetizados | Audio generado en tiempo real | Equipo Umbra, con asistencia de Codex | [src/audio.js](src/audio.js) | MIT | Síntesis con Web Audio API. |
+| Pasos (steps) | Efecto de sonido (MP3) | Amekiano (Freesound), publicado por freesound_community | [Pixabay](https://pixabay.com/sound-effects/household-pasos-steps-40285/) | [Pixabay Content License](https://pixabay.com/service/license-summary/) | Bucle, volumen y velocidad ajustados durante el juego. |
+| Select Button UI | Efecto de sonido (MP3) | Emilianodleon | [Pixabay](https://pixabay.com/sound-effects/film-special-effects-select-button-ui-395763/) | [Pixabay Content License](https://pixabay.com/service/license-summary/) | Volumen ajustado para los interruptores. |
 | [completar: recursos externos añadidos durante el día] | | | | | |
 
 **Inspiración (no se incorporó material de estos juegos):** Phasmophobia (Kinetic Games) y Demonology (Roblox) en jugabilidad; Hotline Miami, Undertale y Pokémon en lo visual; Resident Evil 7 y Village en la estructura del escenario.
