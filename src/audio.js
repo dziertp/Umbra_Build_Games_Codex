@@ -1,36 +1,75 @@
 (function () {
   'use strict';
 
-  let context, master, noiseBuffer, drone, droneGain;
+  let context, master, entityGain, noiseBuffer, drone, droneGain;
   let footsteps, switchClick;
   let muted = false;
   let previousPosition, previousLamps, outageSource;
   let walking = false;
   let pendingPower, lastPower;
   const voices = new Set();
+  const volumeControls = [
+    { id: 'master', label: 'Volumen general', initial: 90 },
+    { id: 'steps', label: 'Pasos del jugador', initial: 85 },
+    { id: 'switches', label: 'Interruptores', initial: 90 },
+    { id: 'ambience', label: 'Ambiente', initial: 80 },
+    { id: 'entities', label: 'Entidades y cacerías', initial: 90 },
+  ];
+  const storageKey = 'umbra.audio.volumes';
+  const clampVolume = value => Math.max(0, Math.min(100, Math.round(value)));
+  const volumes = Object.fromEntries(volumeControls.map(({ id, initial }) => [id, initial]));
+  try {
+    const saved = JSON.parse(localStorage.getItem(storageKey));
+    for (const { id } of volumeControls) {
+      if (Number.isFinite(saved?.[id])) volumes[id] = clampVolume(saved[id]);
+    }
+  } catch {}
 
-  function loadSample(file, volume) {
+  function applyVolumes() {
+    const general = muted ? 0 : volumes.master / 100;
+    if (footsteps) footsteps.volume = 0.42 * general * volumes.steps / 100;
+    if (switchClick) switchClick.volume = 0.47 * general * volumes.switches / 100;
+    if (master) master.gain.setTargetAtTime(0.65 * general, context.currentTime, 0.015);
+    if (entityGain) entityGain.gain.setTargetAtTime(volumes.entities / 100, context.currentTime, 0.015);
+    if (droneGain) droneGain.gain.setTargetAtTime(0.042 * volumes.ambience / 100, context.currentTime, 0.05);
+  }
+
+  Umbra.audio = {
+    volumeControls,
+    volume: id => volumes[id],
+    setVolume(id, value) {
+      if (!Object.hasOwn(volumes, id) || !Number.isFinite(value)) return;
+      volumes[id] = clampVolume(value);
+      applyVolumes();
+      try { localStorage.setItem(storageKey, JSON.stringify(volumes)); } catch {}
+    },
+  };
+
+  function loadSample(file) {
     // La reproducción directa admite rutas file:// sin fetch ni servidor.
     const sample = new Audio('assets/audio/' + file);
     sample.preload = 'auto';
-    sample.volume = volume;
     return sample;
   }
 
   function unlock() {
     if (muted) return;
     if (!footsteps && typeof globalThis.Audio === 'function') {
-      footsteps = loadSample('freesound_community-pasos-steps-40285.mp3', 0.20);
+      footsteps = loadSample('freesound_community-pasos-steps-40285.mp3');
       footsteps.loop = true;
-      switchClick = loadSample('emilianodleon-select-button-ui-395763.mp3', 0.30);
+      switchClick = loadSample('emilianodleon-select-button-ui-395763.mp3');
+      applyVolumes();
     }
     const AudioContext = globalThis.AudioContext;
     if (!AudioContext) return;
     if (!context) {
       context = new AudioContext();
       master = context.createGain();
-      master.gain.value = 0.65;
+      master.gain.value = 0.65 * volumes.master / 100;
       master.connect(context.destination);
+      entityGain = context.createGain();
+      entityGain.gain.value = volumes.entities / 100;
+      entityGain.connect(master);
       noiseBuffer = context.createBuffer(1, Math.ceil(context.sampleRate * 0.6), context.sampleRate);
       const samples = noiseBuffer.getChannelData(0);
       for (let i = 0; i < samples.length; i++) samples[i] = Math.random() * 2 - 1;
@@ -51,7 +90,7 @@
     };
   }
 
-  function voice(settings, duration, level, from, to, type) {
+  function voice(settings, duration, level, from, to, type, bus = master) {
     if (!settings || voices.size >= 16 || settings.volume < 0.015) return;
     const now = context.currentTime;
     const end = now + duration;
@@ -61,7 +100,7 @@
     envelope.gain.exponentialRampToValueAtTime(0.0001, end);
     const pan = context.createStereoPanner();
     pan.pan.value = settings.pan;
-    envelope.connect(pan).connect(master);
+    envelope.connect(pan).connect(bus);
 
     let source, filter;
     if (type === 'noise') {
@@ -110,7 +149,7 @@
     source.type = 'triangle';
     source.frequency.value = 46;
     gain.gain.value = 0;
-    gain.gain.setTargetAtTime(0.034, context.currentTime, 0.35);
+    gain.gain.setTargetAtTime(0.042 * volumes.ambience / 100, context.currentTime, 0.35);
     source.connect(gain).connect(master);
     source.onended = () => {
       source.disconnect();
@@ -131,7 +170,7 @@
       stopSteps();
       return;
     }
-    const running = state.keys.has('ShiftLeft') || state.keys.has('ShiftRight');
+    const running = state.player.canRun !== false && (state.keys.has('ShiftLeft') || state.keys.has('ShiftRight'));
     const rate = running ? 1.42 : 1;
     if (footsteps.playbackRate !== rate) footsteps.playbackRate = rate;
     if (walking) return;
@@ -183,23 +222,23 @@
     }
     const settings = output(state, event);
     switch (event.kind) {
-      case 'thud': voice(settings, 0.17, 0.24, 91, 35, 'triangle'); break;
-      case 'creak': voice(settings, 0.44, 0.10, 225, 320, 'sawtooth'); break;
-      case 'door': voice(settings, 0.36, 0.19, 530, 120, 'noise'); break;
-      case 'whisper': voice(settings, 0.52, 0.13, 1600, 720, 'noise'); break;
-      case 'steps': voice(settings, 0.15, 0.15, 180, 80, 'noise'); break;
+      case 'thud': voice(settings, 0.17, 0.24, 91, 35, 'triangle', entityGain); break;
+      case 'creak': voice(settings, 0.44, 0.10, 225, 320, 'sawtooth', entityGain); break;
+      case 'door': voice(settings, 0.36, 0.19, 530, 120, 'noise', entityGain); break;
+      case 'whisper': voice(settings, 0.52, 0.13, 1600, 720, 'noise', entityGain); break;
+      case 'steps': voice(settings, 0.15, 0.15, 180, 80, 'noise', entityGain); break;
     }
   });
   Umbra.on('hunt:start', (_, state) => {
     const settings = output(state);
-    voice(settings, 0.44, 0.31, 80, 31, 'triangle');
-    voice(settings, 0.58, 0.07, 150, 63, 'sawtooth');
+    voice(settings, 0.44, 0.31, 80, 31, 'triangle', entityGain);
+    voice(settings, 0.58, 0.07, 150, 63, 'sawtooth', entityGain);
   });
   Umbra.on('hunt:step', (event, state) => {
-    voice(output(state, event), 0.16, 0.23, 90, 36, 'triangle');
+    voice(output(state, event), 0.16, 0.23, 90, 36, 'triangle', entityGain);
   });
   Umbra.on('hunt:end', (event, state) => {
-    if (!event?.caught) voice(output(state), 0.35, 0.11, 110, 165, 'sine');
+    if (!event?.caught) voice(output(state), 0.35, 0.11, 110, 165, 'sine', entityGain);
   });
   Umbra.on('tool:used', ({ id, evidence }, state) => {
     if (id === 'spiritbox') voice(output(state), 0.19, 0.15, 2700, 1250, 'noise');
@@ -218,7 +257,7 @@
     } else {
       unlock();
     }
-    if (master) master.gain.setTargetAtTime(muted ? 0 : 0.65, context.currentTime, 0.015);
+    applyVolumes();
   });
 
   Umbra.register({
