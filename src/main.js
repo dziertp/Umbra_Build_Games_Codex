@@ -18,7 +18,7 @@
   const ctx = buffer.getContext('2d');
 
   const state = {
-    scene: 'menu', // menu | play | result
+    scene: 'intro', // intro | menu | play | result (intro.js)
     floor: 0,
     closetOpen: [false, false],
     player: { x: 0, y: 0, facing: 0 },
@@ -129,7 +129,7 @@
 
   // ---------- Actualización ----------
   function update(dt) {
-    if (state.scene !== 'play' || state.journal?.open) return;
+    if (state.scene !== 'play' || state.journal?.open || state.paused) return;
     Umbra.call('update', dt, state);
     const k = state.keys;
     let dx = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
@@ -239,6 +239,7 @@
     Umbra.call('updateAudio', state);
     if (state.scene === 'play') drawWorld();
     else if (state.scene === 'result') Umbra.call('drawResult', ctx, state);
+    else if (state.scene === 'intro') Umbra.call('drawIntro', ctx, state);
     else drawMenu();
     sctx.imageSmoothingEnabled = false;
     sctx.drawImage(buffer, 0, 0, screen.width, screen.height);
