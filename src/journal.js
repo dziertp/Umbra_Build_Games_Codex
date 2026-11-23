@@ -8,7 +8,25 @@
 (function () {
   'use strict';
 
-  const TABS = ['ENTIDADES', 'EQUIPO', 'PRUEBAS'];
+  const TABS = ['ENTIDADES', 'EQUIPO', 'PRUEBAS', 'CONTROLES'];
+  const MOVEMENT_CONTROLS = [
+    ['WASD / Flechas', 'Moverse'],
+    ['Shift', 'Correr'],
+    ['E', 'Interactuar o esconderse'],
+    ['L', 'Encender o apagar linterna'],
+    ['F', 'Usar herramienta'],
+    ['M', 'Activar o silenciar sonido'],
+    ['G', 'Devolver equipo en el porche'],
+  ];
+  const JOURNAL_CONTROLS = [
+    ['1–3', 'Equipar un espacio del inventario'],
+    ['Tab / J', 'Abrir o cerrar el diario'],
+    ['Q / E', 'Cambiar pestaña'],
+    ['Flechas', 'Navegar en el diario'],
+    ['Enter / Espacio', 'Marcar o elegir en Pruebas'],
+    ['Clic', 'Seleccionar elementos'],
+    ['Esc', 'Cerrar diario o volver al menú'],
+  ];
   const C = {
     shade: 'rgba(5,6,8,0.9)',
     cover: '#3b2b20',
@@ -97,8 +115,6 @@
   // ---------- Utilidades ----------
   const data = () => Umbra.data;
   const evidenceById = (id) => (data().evidence || []).find((e) => e.id === id);
-  const keyLabel = (code) => (code || '').replace(/^Digit/, '').replace(/^Key/, '');
-
   function wrap(ctx, text, maxW) {
     const lines = [];
     let line = '';
@@ -161,7 +177,7 @@
     const { x, y, w, h } = BOOK;
     // Pestañas (detrás de la tapa).
     TABS.forEach((label, i) => {
-      const ty = y + 14 + i * 60;
+      const ty = y + 12 + i * 56;
       const active = j.tab === i;
       ctx.fillStyle = C.coverEdge;
       ctx.fillRect(x + w - 2, ty - 1, 20, 54);
@@ -294,7 +310,7 @@
     }
   }
 
-  function drawEquipment(ctx, j) {
+  function drawEquipment(ctx, j, slots) {
     const tools = data().tools || [];
     pageTitle(ctx, LEFT, 'Equipo');
     tools.forEach((t, i) => {
@@ -308,7 +324,8 @@
       ctx.strokeStyle = C.ink;
       ctx.strokeRect(LEFT.x + 3.5, y + 2.5, 11, 10);
       ctx.textAlign = 'center';
-      text(ctx, keyLabel(t.key), LEFT.x + 9, y + 11, C.ink, 'bold 8px monospace');
+      const slot = slots.indexOf(t);
+      text(ctx, slot < 0 ? '–' : String(slot + 1), LEFT.x + 9, y + 11, C.ink, 'bold 8px monospace');
       ctx.textAlign = 'left';
       text(ctx, t.name, LEFT.x + 20, y + 11, C.ink, '9px monospace', LEFT.w - 40);
       const evId = (t.evidence || [])[0];
@@ -318,7 +335,9 @@
     const t = tools[j.toolSel];
     if (!t) return;
     pageTitle(ctx, RIGHT, t.name);
-    text(ctx, 'Tecla ' + keyLabel(t.key) + ' para equipar · F para usar', RIGHT.x, RIGHT.y + 32, C.inkSoft, '8px monospace', RIGHT.w);
+    const slot = slots.indexOf(t);
+    const hint = slot < 0 ? 'Recógela en el porche con E' : 'Espacio ' + (slot + 1) + ' · F para usar al equiparla';
+    text(ctx, hint, RIGHT.x, RIGHT.y + 32, C.inkSoft, '8px monospace', RIGHT.w);
     let y = paragraph(ctx, t.description, RIGHT, RIGHT.y + 48, 9);
     y += 8;
     text(ctx, 'Detecta', RIGHT.x, y, C.ink, 'bold 9px monospace');
@@ -328,6 +347,24 @@
       evidenceRow(ctx, j, ev, RIGHT.x, y, RIGHT.w);
       y += 16;
     }
+  }
+
+  function drawControls(ctx, page, title, controls) {
+    pageTitle(ctx, page, title);
+    const keyWidth = 82;
+    const actionX = page.x + keyWidth + 8;
+    controls.forEach(([keys, action], index) => {
+      const y = page.y + 29 + index * 28;
+      ctx.fillStyle = C.paperDark;
+      ctx.fillRect(page.x, y, keyWidth, 17);
+      text(ctx, keys, page.x + 4, y + 12, C.ink, 'bold 8px monospace', keyWidth - 8);
+      ctx.font = '9px monospace';
+      wrap(ctx, action, page.w - keyWidth - 8).forEach((line, row) => {
+        text(ctx, line, actionX, y + 9 + row * 10, C.ink, '9px monospace');
+      });
+      ctx.fillStyle = C.paperLine;
+      ctx.fillRect(page.x, y + 23, page.w, 1);
+    });
   }
 
   function drawProof(ctx, j) {
@@ -409,6 +446,7 @@
   }
 
   function navigate(j, code) {
+    if (j.tab === 3) return;
     const dx = code === 'ArrowLeft' ? -1 : code === 'ArrowRight' ? 1 : 0;
     const dy = code === 'ArrowUp' ? -1 : code === 'ArrowDown' ? 1 : 0;
     const entities = data().entities.length;
@@ -505,10 +543,17 @@
       ctx.fillRect(0, BOOK.y + BOOK.h + 2, state.view.w, state.view.h - BOOK.y - BOOK.h - 2);
       drawBook(ctx, j);
       if (j.tab === 0) drawEntities(ctx, j);
-      else if (j.tab === 1) drawEquipment(ctx, j);
-      else drawProof(ctx, j);
+      else if (j.tab === 1) drawEquipment(ctx, j, state.tools.slots);
+      else if (j.tab === 2) drawProof(ctx, j);
+      else {
+        drawControls(ctx, LEFT, 'Movimiento e interacción', MOVEMENT_CONTROLS);
+        drawControls(ctx, RIGHT, 'Investigación e interfaz', JOURNAL_CONTROLS);
+      }
       ctx.textAlign = 'center';
-      text(ctx, 'Q/E pestaña · Flechas · Enter marcar/elegir · Clic · Tab/J cerrar', state.view.w / 2, state.view.h - 5, C.hint, '8px monospace');
+      const footer = j.tab === 3
+        ? 'Q/E o clic: cambiar pestaña · Tab/J o Esc: cerrar'
+        : 'Q/E pestaña · Flechas · Enter marcar/elegir · Clic · Tab/J cerrar';
+      text(ctx, footer, state.view.w / 2, state.view.h - 5, C.hint, '8px monospace');
       ctx.restore();
     },
   });

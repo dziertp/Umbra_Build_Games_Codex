@@ -201,21 +201,17 @@
     ctx.textAlign = 'center';
     ctx.fillStyle = C.text;
     ctx.font = 'bold 32px monospace';
-    ctx.fillText('UMBRA', VIEW_W / 2, 66);
+    ctx.fillText('UMBRA', VIEW_W / 2, 91);
     ctx.font = '10px monospace';
     ctx.fillStyle = '#8c9cac';
-    ctx.fillText('Encuentra evidencias, identifica a la entidad', VIEW_W / 2, 96);
-    ctx.fillText('en el diario y sal por la puerta principal.', VIEW_W / 2, 109);
-    ctx.fillText('WASD / Flechas: moverse · Shift: correr', VIEW_W / 2, 148);
-    ctx.fillText('E: interactuar / esconderse · L: linterna', VIEW_W / 2, 162);
-    ctx.fillText('1–8: seleccionar herramientas · F: usar herramienta', VIEW_W / 2, 176);
-    ctx.fillText('Tab / J: diario · M: activar o silenciar audio', VIEW_W / 2, 190);
+    ctx.fillText('Encuentra evidencias, identifica a la entidad', VIEW_W / 2, 119);
+    ctx.fillText('en el diario y sal por la puerta principal.', VIEW_W / 2, 132);
     ctx.fillStyle = C.fuse;
-    ctx.fillText('Enter o clic para comenzar la partida', VIEW_W / 2, 221);
+    ctx.fillText('Enter o clic para comenzar la partida', VIEW_W / 2, 180);
     // Los ojos en la oscuridad.
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(VIEW_W / 2 - 9, 124, 6, 2);
-    ctx.fillRect(VIEW_W / 2 + 3, 124, 6, 2);
+    ctx.fillRect(VIEW_W / 2 - 9, 147, 6, 2);
+    ctx.fillRect(VIEW_W / 2 + 3, 147, 6, 2);
   }
 
   // ---------- Escalado a pantalla ----------
