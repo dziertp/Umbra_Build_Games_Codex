@@ -12,12 +12,13 @@ const drawing = new Proxy({}, {
 });
 const canvas = { style: {}, getContext: () => drawing, addEventListener: noop };
 let nextFrame;
+let now = 0;
 const sandbox = vm.createContext({
   document: { getElementById: () => canvas, createElement: () => canvas },
   Image: class {},
   innerWidth: 480,
   innerHeight: 270,
-  performance: { now: () => 0 },
+  performance: { now: () => now },
   requestAnimationFrame: callback => { nextFrame = callback; },
   addEventListener(name, callback) {
     if (!handlers.has(name)) handlers.set(name, []);
@@ -42,6 +43,11 @@ const bag = () => Array.from(state.tools.slots, tool => tool?.id ?? null);
 const use = () => press('KeyF');
 const take = () => press('KeyE');
 const check = expected => assert.deepEqual(bag(), expected);
+const journal = U.systems.find(system => system.drawOverlay);
+const finishBlink = () => {
+  now += 401;
+  journal.drawOverlay(drawing, state);
+};
 
 press('Enter');
 check([null, null, null, null]);
@@ -62,34 +68,46 @@ const standByBoard = () => place(board[0] + 20, board[1] + board[3] + 10);
 standByBoard();
 take();
 assert.equal(state.journal.mode, 'board');
+assert.ok(state.journal.blink);
 U.emit('base:objectives');
 assert.equal(state.journal.mode, 'board');
+finishBlink();
 
+// Click recoge una herramienta y la ranura la devuelve.
+journal.onClick(67, 71, state);
+check([first.id, null, null, null]);
+journal.drawOverlay(drawing, state);
+journal.onClick(190, 243, state);
+check([null, null, null, null]);
 press('Enter');
 press('Enter', true);
 check([first.id, null, null, null]);
 press('Escape');
+finishBlink();
 press('Digit2');
 use();
 assert.deepEqual(used, []);
 take();
+finishBlink();
 for (let i = 0; i < 4; i++) {
-  press('ArrowDown');
+  press('ArrowRight');
   press('Enter');
 }
 check([first.id, second.id, third.id, fourth.id]);
 assert.match(state.journal.boardMessage, /Inventario lleno/);
-press('ArrowUp');
+press('ArrowLeft');
 press('Enter');
 check([first.id, second.id, third.id, null]);
-press('ArrowDown');
+press('ArrowRight');
 press('Enter');
 check([first.id, second.id, third.id, fifth.id]);
 press('Enter');
-for (let i = 0; i < 4; i++) press('ArrowDown');
+press('ArrowDown');
+press('ArrowRight');
 press('Enter');
 check([first.id, second.id, third.id, flashlight.id]);
 press('Escape');
+finishBlink();
 press('Digit4');
 assert.equal(state.tools.slots[state.tools.selected], flashlight);
 place(640, 990);
@@ -99,7 +117,6 @@ press('Digit3');
 use();
 assert.deepEqual(used, [third.id]);
 
-const journal = U.systems.find(system => system.drawOverlay);
 journal.onClick(428, 13, state);
 assert.equal(state.journal.mode, 'book');
 U.emit('base:board');

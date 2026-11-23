@@ -120,6 +120,12 @@
       Umbra.call('onClick', x, y, state);
     }
   });
+  screen.addEventListener('pointermove', (e) => {
+    if (state.scene !== 'play' || state.journal?.mode !== 'board') return;
+    const bounds = screen.getBoundingClientRect();
+    Umbra.call('onPointer', (e.clientX - bounds.left) * VIEW_W / bounds.width,
+      (e.clientY - bounds.top) * VIEW_H / bounds.height, state);
+  });
 
   // ---------- Actualización ----------
   function update(dt) {

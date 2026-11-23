@@ -49,6 +49,8 @@
   const RIGHT = { x: 246, y: 16, w: 190 };
   const GRID = { cols: 3, row: 12 };
   const CLOSE = { x: 428, y: 4, w: 20, h: 15 };
+  const CAMP_BACK = { x: 398, y: 12, w: 64, h: 20 };
+  const blinkMs = 400;
 
   function journalButton(state) {
     return { x: state.view.w - 77, y: state.debug ? 27 : 6, w: 71, h: 17 };
@@ -64,12 +66,23 @@
     state.journal.mode = mode;
     state.journal.boardMessage = '';
     state.journal.hits = [];
+    if (mode === 'board') state.journal.blink = { start: performance.now(), closing: false };
     state.keys.clear();
   }
 
   function closePanel(j) {
+    if (j.mode === 'board') {
+      j.blink = { start: performance.now(), closing: true };
+      j.hits = [];
+      return;
+    }
+    resetPanel(j);
+  }
+
+  function resetPanel(j) {
     j.open = false;
     j.mode = null;
+    j.blink = null;
     j.hits = [];
   }
 
@@ -348,9 +361,8 @@
   function drawEquipment(ctx, state) {
     const j = state.journal;
     const slots = state.tools.slots;
-    const board = j.mode === 'board';
     const tools = data().tools || [];
-    pageTitle(ctx, LEFT, board ? 'Equipo del campamento' : 'Equipo');
+    pageTitle(ctx, LEFT, 'Equipo');
     tools.forEach((t, i) => {
       const y = LEFT.y + 26 + i * 17;
       if (i === j.toolSel) {
@@ -385,14 +397,87 @@
       evidenceRow(ctx, j, ev, RIGHT.x, y, RIGHT.w);
       y += 16;
     }
-    if (board) {
-      text(ctx, 'Inventario: ' + slots.filter(Boolean).length + '/' + slots.length, LEFT.x, 199, C.ink, 'bold 10px monospace');
-      ctx.fillStyle = C.select;
-      ctx.fillRect(RIGHT.x, 194, RIGHT.w, 19);
-      text(ctx, slot < 0 ? 'Enter · Recoger' : 'Enter · Devolver', RIGHT.x + 6, 207, C.ink, 'bold 9px monospace');
-      hit(j, RIGHT.x, 194, RIGHT.w, 19, () => exchangeSelected(state));
-      text(ctx, j.boardMessage, RIGHT.x, 229, C.ink, '9px monospace', RIGHT.w);
+  }
+
+  function boardCell(i) {
+    return { x: 28 + (i % 3) * 83, y: 48 + Math.floor(i / 3) * 53, w: 78, h: 47 };
+  }
+
+  function drawCampBack(ctx, j) {
+    const b = CAMP_BACK;
+    ctx.fillStyle = '#282a2b';
+    ctx.fillRect(b.x, b.y, b.w, b.h);
+    text(ctx, 'Volver', b.x + 12, b.y + 14, '#ded7c7', '9px monospace');
+    hit(j, b.x, b.y, b.w, b.h, () => closePanel(j));
+  }
+
+  function drawBoard(ctx, state) {
+    const j = state.journal;
+    const slots = state.tools.slots;
+    const tools = data().tools;
+    ctx.fillStyle = '#121516';
+    ctx.fillRect(0, 0, state.view.w, state.view.h);
+    ctx.fillStyle = '#75634a';
+    ctx.fillRect(20, 40, 258, 167);
+    ctx.fillStyle = '#544738';
+    ctx.fillRect(23, 43, 252, 161);
+    ctx.fillStyle = '#302a23';
+    for (let y = 46; y < 204; y += 6) {
+      for (let x = 26; x < 275; x += 6) ctx.fillRect(x, y, 1, 1);
     }
+    text(ctx, 'Equipo del campamento', 20, 26, '#ded7c7', 'bold 14px monospace');
+    drawCampBack(ctx, j);
+
+    tools.forEach((tool, i) => {
+      const { x, y, w, h } = boardCell(i);
+      const held = slots.indexOf(tool);
+      const active = i === j.toolSel;
+      if (active) {
+        ctx.fillStyle = '#74604a';
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = '#e1b66e';
+        ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+      }
+      const hookX = x + (w - 32) / 2;
+      ctx.fillStyle = '#a39276';
+      ctx.fillRect(hookX + 15, y + 2, 3, 4);
+      if (held < 0) Umbra.art.tool(ctx, tool.id, hookX, y + 4, 2);
+      ctx.textAlign = 'center';
+      text(ctx, held < 0 ? tool.name : 'En ranura ' + (held + 1), x + w / 2, y + 42,
+        active ? '#f1d7a0' : '#d2c6b2', '8px monospace', w - 6);
+      ctx.textAlign = 'left';
+      hit(j, x, y, w, h, () => {
+        j.toolSel = i;
+        exchangeSelected(state);
+      });
+    });
+
+    const selected = tools[j.toolSel];
+    if (selected) {
+      const page = { x: 294, w: 167 };
+      text(ctx, selected.name, page.x, 57, '#efcf98', 'bold 11px monospace', page.w);
+      ctx.font = '9px monospace';
+      wrap(ctx, selected.description, page.w).forEach((line, i) => {
+        text(ctx, line, page.x, 76 + i * 12, '#d2c6b2', '9px monospace');
+      });
+      text(ctx, slots.includes(selected) ? 'Enter / clic · Devolver' : 'Enter / clic · Recoger',
+        page.x, 170, '#efcf98', '9px monospace');
+      text(ctx, j.boardMessage, page.x, 189, '#d2c6b2', '8px monospace', page.w);
+    }
+    const left = (state.view.w - (slots.length * 32 - 4)) / 2;
+    text(ctx, 'Inventario: ' + slots.filter(Boolean).length + '/' + slots.length, left, 225, '#ded7c7', '9px monospace');
+    slots.forEach((tool, index) => {
+      const x = left + index * 32;
+      ctx.fillStyle = index === state.tools.selected ? '#e1b66e' : '#655f54';
+      ctx.fillRect(x, 231, 28, 26);
+      ctx.fillStyle = '#272723';
+      ctx.fillRect(x + 1, 232, 26, 24);
+      if (tool) Umbra.art.tool(ctx, tool.id, x + 9, 236, 1);
+      text(ctx, String(index + 1), x + 3, 241, '#ded7c7', '8px monospace');
+      hit(j, x, 231, 28, 26, () => {
+        if (tool) j.boardMessage = Umbra.tools.exchange(state, tool);
+      });
+    });
   }
 
   function drawControls(ctx, page, title, controls) {
@@ -547,7 +632,8 @@
       return;
     }
     if (j.mode === 'board' || j.tab === 1) {
-      j.toolSel = Math.max(0, Math.min(data().tools.length - 1, j.toolSel + dy));
+      const step = j.mode === 'board' ? dx + dy * 3 : dy;
+      j.toolSel = Math.max(0, Math.min(data().tools.length - 1, j.toolSel + step));
       return;
     }
     const entities = data().entities.length;
@@ -588,6 +674,7 @@
       state.journal = {
         open: false,
         mode: null,
+        blink: null,
         tab: 0,
         focus: 0,      // 0 página izquierda, 1 página derecha (en PRUEBAS)
         entitySel: 0,
@@ -603,6 +690,10 @@
     onKey(event, state) {
       if (state.scene !== 'play' || !state.journal) return false;
       const j = state.journal;
+      if (j.blink) {
+        event.preventDefault();
+        return true;
+      }
       if (event.code === 'Tab' || event.code === 'KeyJ') {
         event.preventDefault();
         if (!event.repeat) {
@@ -627,6 +718,7 @@
     onClick(x, y, state) {
       const j = state.journal;
       if (state.scene !== 'play' || !j) return;
+      if (j.blink) return;
       if (!j.open) {
         if (contains(journalButton(state), x, y)) openPanel(state, 'book');
         return;
@@ -638,6 +730,12 @@
           return;
         }
       }
+    },
+    onPointer(x, y, state) {
+      const j = state.journal;
+      if (j?.mode !== 'board' || j.blink) return;
+      const index = data().tools.findIndex((_, i) => contains(boardCell(i), x, y));
+      if (index >= 0) j.toolSel = index;
     },
     drawUI(ctx, state) {
       if (state.scene !== 'play' || state.journal?.open) return;
@@ -659,13 +757,32 @@
       const j = state.journal;
       if (!j || !j.open) return;
       j.hits = [];
+      if (j.mode === 'board') {
+        const blink = j.blink;
+        const progress = blink ? Math.min(1, (performance.now() - blink.start) / blinkMs) : 1;
+        if (progress === 1 && blink) {
+          if (blink.closing) {
+            resetPanel(j);
+            return;
+          }
+          j.blink = null;
+        }
+        ctx.save();
+        ctx.textAlign = 'left';
+        if (!blink || (blink.closing ? progress < 0.5 : progress >= 0.5)) drawBoard(ctx, state);
+        if (progress < 1) {
+          ctx.fillStyle = '#000';
+          ctx.fillRect(0, 0, state.view.w, Math.ceil(state.view.h * (1 - Math.abs(2 * progress - 1))));
+        }
+        ctx.restore();
+        return;
+      }
       ctx.save();
       ctx.textAlign = 'left';
       ctx.fillStyle = C.shade;
       ctx.fillRect(0, 0, state.view.w, state.view.h);
       drawBook(ctx, j);
-      if (j.mode === 'board') drawEquipment(ctx, state);
-      else if (j.mode === 'objectives') drawObjectives(ctx, state);
+      if (j.mode === 'objectives') drawObjectives(ctx, state);
       else if (j.tab === 0) drawEntities(ctx, j);
       else if (j.tab === 1) drawEquipment(ctx, state);
       else if (j.tab === 2) drawProof(ctx, j);
@@ -676,8 +793,7 @@
         drawSettings(ctx, j);
       }
       ctx.textAlign = 'center';
-      const footer = j.mode === 'board' ? 'Flechas o clic: seleccionar · Enter: recoger/devolver · Esc: cerrar'
-        : j.mode === 'objectives' ? 'Esc: cerrar'
+      const footer = j.mode === 'objectives' ? 'Esc: cerrar'
         : j.tab === 4 ? '↑/↓ elegir · ←/→ o clic ajustar · Q/E pestaña · Esc cerrar'
         : 'Q/E pestaña · Flechas · Enter marcar/elegir · Clic · Tab/J cerrar';
       ctx.font = '8px monospace';
