@@ -76,6 +76,7 @@ Incluye todo lo que no se creó durante la jornada (propio o ajeno), todo recurs
 | Imágenes de referencia de personajes (Hannah, Turner, Chloe) | Material previo propio (imagen) | [completar: autor / herramienta de IA] | `docs/personajes/` | [completar] | [completar] |
 | Audios preliminares de ambiente y tropiezo | Material previo propio (audio) | [completar: autor / herramienta] | [completar: subir a `docs/audio/` si se usan] | [completar] | [completar] |
 | Claude (Anthropic) y Codex (OpenAI) | Herramientas de IA | Anthropic, OpenAI | https://claude.ai · https://openai.com/codex | Según sus términos de uso | Asistencia en código, pruebas y documentación. |
+| Ambiente y efectos sintetizados | Audio generado en tiempo real | Equipo Umbra, con asistencia de Codex | [src/audio.js](src/audio.js) | MIT | Síntesis con Web Audio API. |
 | [completar: recursos externos añadidos durante el día] | | | | | |
 
 **Inspiración (no se incorporó material de estos juegos):** Phasmophobia (Kinetic Games) y Demonology (Roblox) en jugabilidad; Hotline Miami, Undertale y Pokémon en lo visual; Resident Evil 7 y Village en la estructura del escenario.

@@ -75,14 +75,15 @@
       }
       if (event.code !== 'KeyF') return false;
       if (event.repeat) return true;
+      const tool = tools.equipped;
       if (tools.hunting) {
         tools.detected = false;
         tools.reading = garbled(tools.reading);
+        Umbra.emit('tool:used', { id: tool.id });
         return true;
       }
 
       const entity = state.entity;
-      const tool = tools.equipped;
       const room = roomAt(state.G.floors[state.floor].rooms, state.player);
       const evidence = entity && entity.floor === state.floor && room?.[0] === entity.room[0]
         ? tool.evidence.find(id => entity.type.evidence.includes(id))
@@ -93,6 +94,7 @@
         tools.reading = Umbra.data.evidence.find(item => item.id === evidence)?.name || 'Evidencia detectada';
       }
       if (evidence) Umbra.emit('evidence:found', { id: evidence });
+      Umbra.emit('tool:used', { id: tool.id, evidence });
       return true;
     },
     drawUI(ctx, state) {

@@ -10,7 +10,8 @@
     'F: usar herramienta',
     'Tab / J: abrir diario',
     'Esc: volver al menú',
-    'H: mostrar/ocultar controles',
+    'M: activar/silenciar audio',
+    'K: mostrar/ocultar controles',
   ];
 
   function atMainDoor(state) {
@@ -41,7 +42,7 @@
         if (event.code === 'Enter' && !event.repeat) state.scene = 'menu';
         return true;
       }
-      if (state.scene === 'play' && !state.journal?.open && event.code === 'KeyH') {
+      if (state.scene === 'play' && !state.journal?.open && event.code === 'KeyK') {
         if (!event.repeat) state.showControls = !state.showControls;
         return true;
       }

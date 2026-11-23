@@ -201,19 +201,21 @@
     ctx.textAlign = 'center';
     ctx.fillStyle = C.text;
     ctx.font = 'bold 32px monospace';
-    ctx.fillText('UMBRA', VIEW_W / 2, 95);
+    ctx.fillText('UMBRA', VIEW_W / 2, 66);
     ctx.font = '10px monospace';
     ctx.fillStyle = '#8c9cac';
-    ctx.fillText('Identifica a la entidad antes de que te encuentre.', VIEW_W / 2, 125);
-    ctx.fillText('WASD / flechas: moverse · Shift: correr', VIEW_W / 2, 170);
-    ctx.fillText('E: interactuar · L: linterna · Esc: menú', VIEW_W / 2, 183);
-    ctx.fillText('Tab: diario', VIEW_W / 2, 196);
+    ctx.fillText('Encuentra evidencias, identifica a la entidad', VIEW_W / 2, 96);
+    ctx.fillText('en el diario y sal por la puerta principal.', VIEW_W / 2, 109);
+    ctx.fillText('WASD / Flechas: moverse · Shift: correr', VIEW_W / 2, 148);
+    ctx.fillText('E: interactuar / esconderse · L: linterna', VIEW_W / 2, 162);
+    ctx.fillText('1–8: seleccionar herramientas · F: usar herramienta', VIEW_W / 2, 176);
+    ctx.fillText('Tab / J: diario · M: activar o silenciar audio', VIEW_W / 2, 190);
     ctx.fillStyle = C.fuse;
-    ctx.fillText('Pulsa Enter o haz clic para comenzar', VIEW_W / 2, 219);
+    ctx.fillText('Enter o clic para comenzar la partida', VIEW_W / 2, 221);
     // Los ojos en la oscuridad.
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(VIEW_W / 2 - 9, 145, 6, 2);
-    ctx.fillRect(VIEW_W / 2 + 3, 145, 6, 2);
+    ctx.fillRect(VIEW_W / 2 - 9, 124, 6, 2);
+    ctx.fillRect(VIEW_W / 2 + 3, 124, 6, 2);
   }
 
   // ---------- Escalado a pantalla ----------
@@ -231,6 +233,7 @@
     const dt = Math.min(0.25, (now - last) / 1000);
     last = now;
     update(dt);
+    Umbra.call('updateAudio', state);
     if (state.scene === 'play') drawWorld();
     else if (state.scene === 'result') Umbra.call('drawResult', ctx, state);
     else drawMenu();
