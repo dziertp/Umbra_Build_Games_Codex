@@ -187,14 +187,26 @@
 
   // Uso de la herramienta equipada: línea pequeña justo encima de la barra de inventario.
   function drawHint(ctx, state) {
-    const held = equipped(state);
-    if (!held || !held.hint || state.scene !== 'play' || (state.journal && state.journal.open)) return;
+    if (state.scene !== 'play' || state.paused || (state.journal && state.journal.open)) return;
     const { w, h } = state.view;
+    // Controles siempre visibles junto a la barra de inventario.
+    ctx.save();
+    ctx.font = '8px monospace';
+    const ctrl = 'F Usar · 1-4 Equipar · Shift Correr';
+    const cw = Math.ceil(ctx.measureText(ctrl).width) + 8;
+    ctx.fillStyle = 'rgba(7,9,12,0.8)';
+    ctx.fillRect(Math.round((w - cw) / 2), h - 74, cw, 11);
+    ctx.fillStyle = '#8c9cac';
+    ctx.textAlign = 'center';
+    ctx.fillText(ctrl, w / 2, h - 66);
+    ctx.restore();
+    const held = equipped(state);
+    if (!held || !held.hint) return;
     ctx.save();
     ctx.font = '8px monospace';
     const tw = Math.min(w - 20, Math.ceil(ctx.measureText(held.hint).width) + 8);
     const x = Math.round((w - tw) / 2);
-    const y = h - 74;
+    const y = h - 86;
     ctx.fillStyle = 'rgba(7,9,12,0.8)';
     ctx.fillRect(x, y, tw, 11);
     ctx.fillStyle = '#c9b07a';
@@ -227,6 +239,14 @@
       if (!state.paused && e.code === 'KeyE' && newspaperNear(state) && !(state.journal && state.journal.open)) {
         if (!e.repeat) Umbra.tell('«31 MINUTOS: noticia exclusiva desde la Mansión Umbra»', 4);
         return true;
+      }
+      // Un solo botón: F con la linterna equipada la enciende o apaga (L sigue de atajo).
+      if (!state.paused && e.code === 'KeyF' && !e.repeat && !(state.journal && state.journal.open)) {
+        const h = equipped(state);
+        if (h && h.light && Umbra.lighting) {
+          Umbra.lighting.on = !Umbra.lighting.on;
+          return true;
+        }
       }
       // Completo italiano: F le da un mordisco.
       if (!state.paused && e.code === 'KeyF' && !e.repeat) {

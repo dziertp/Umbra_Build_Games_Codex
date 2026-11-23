@@ -17,6 +17,6 @@ Umbra.data.tools = [
     description: 'Proyecta una malla de puntos verdes. Una figura invisible la deforma al moverse.' },
   { id: 'flowers', hint: 'F: déjalas en su habitación. Si se marchitan, es evidencia.', name: 'Flores', key: 'Digit8', evidence: ['wither'], idleReading: 'Flores frescas', readings: { wither: 'Flores marchitas' },
     description: 'Un ramo fresco. Algunas entidades lo marchitan al pasar cerca.' },
-  { id: 'flashlight', hint: 'L enciende la linterna.', name: 'Linterna', evidence: [], light: true, description: 'Linterna de mano. Sin ella, la casa está a oscuras.' },
+  { id: 'flashlight', hint: 'F o L: enciende o apaga la linterna.', name: 'Linterna', evidence: [], light: true, description: 'Linterna de mano. Sin ella, la casa está a oscuras.' },
   { id: 'completo', name: 'Completo italiano', evidence: [], description: 'No sirve de mucho, pero por si te da hambre.', hint: 'F: darle un mordisco.' },
 ];

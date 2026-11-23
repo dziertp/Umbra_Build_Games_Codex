@@ -145,7 +145,9 @@
       ctx.font = '9px monospace';
       ctx.fillText(slots[selected]?.name || 'Sin herramienta equipada', 15, y + 11, 152);
       ctx.fillStyle = hunting ? '#e59f83' : detected ? '#edc578' : '#a5bacb';
-      ctx.fillText(reading || (selected < 0 ? 'Equipo en el campamento' : 'Sin lectura'), 15, y + 22, 152);
+      const lightTool = selected >= 0 && state.tools.slots[selected] && state.tools.slots[selected].light;
+      const idle = lightTool ? (Umbra.lighting && Umbra.lighting.on ? 'Encendida' : 'Apagada') : 'Sin lectura';
+      ctx.fillText(reading || (selected < 0 ? 'Equipo en el campamento' : idle), 15, y + 22, 152);
       const left = Math.round((state.view.w - (slots.length * 30 - 4)) / 2);
       ctx.fillStyle = '#d8d2c4';
       ctx.fillText('Inventario: ' + slots.filter(Boolean).length + '/' + slots.length, left, y - 4);
