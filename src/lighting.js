@@ -81,6 +81,7 @@
   }
 
   const light = { on: true, poly: [] };
+  let torch = true; // linterna encendida en este fotograma (light.on salvo parpadeo de cacería)
 
   let dark = null; // capa de oscuridad
   let mask = null; // máscara auxiliar por nivel
@@ -164,7 +165,7 @@
     c.beginPath();
     c.arc(x, y, halo, 0, Math.PI * 2);
     c.fill();
-    if (!light.on) return;
+    if (!torch) return;
     c.beginPath();
     c.moveTo(x, y);
     c.arc(x, y, reach, facing - cone / 2, facing + cone / 2);
@@ -227,6 +228,9 @@
       d.fillRect(0, 0, w, h);
       d.globalAlpha = 1;
 
+      // Parpadeo de lámparas y linterna antes y durante una cacería (lo decide entity.js).
+      const flicker = state.entity && state.entity.flicker;
+      torch = light.on && !(flicker && flicker.torch);
       const poly = light.poly;
       const p = state.player;
       const x = p.x + ox;
@@ -238,7 +242,7 @@
           draw(c);
         };
         const D = state.G.floors[state.floor];
-        const lamps = Umbra.power ? Umbra.power.litRooms(state, state.floor) : [];
+        const lamps = Umbra.power && !(flicker && flicker.lamps) ? Umbra.power.litRooms(state, state.floor) : [];
         const drawLamps = (c) => {
           for (const r of lamps) {
             roomPath(c, r, D.rooms, ox, oy);
@@ -300,7 +304,7 @@
           ctx.fillStyle = CFG.lampWarm;
           drawLamps(ctx);
         }
-        if (light.on) {
+        if (torch) {
           ctx.fillStyle = CFG.warm;
           shapes(ctx, x, y, p.facing, 0, CFG.cone, CFG.reach);
         }

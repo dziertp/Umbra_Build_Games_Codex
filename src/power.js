@@ -72,6 +72,22 @@
     return (lower.split(' ')[0].endsWith('a') ? 'de la ' : 'del ') + lower;
   }
 
+  // Interruptor que E accionaría ahora: el más cercano a menos de SWITCH_REACH, con línea
+  // directa (sin muros ni hojas de puerta en medio). Cerca del armario o de los fusibles, E es de ellos.
+  function switchInReach(state) {
+    if (!state.power || !state.model) return null;
+    const D = state.G.floors[state.floor];
+    const p = state.player;
+    if (near(p, D.closet, 40) || near(p, D.fuse, 30)) return null;
+    let found = null;
+    let best = SWITCH_REACH;
+    for (const s of state.power.switches[state.floor]) {
+      const d = Math.hypot(s.x - p.x, s.y - p.y);
+      if (d < best && !blockedLine(p.x, p.y, s.x, s.y, state.model.walls)) { best = d; found = s; }
+    }
+    return found;
+  }
+
   Umbra.on('power:off', (_, state) => {
     if (!state.power || !state.power.on) return;
     state.power.on = false;
@@ -99,17 +115,9 @@
     onKey(e, state) {
       if (e.code !== 'KeyE' || !state.power) return false;
       const D = state.G.floors[state.floor];
-      const p = state.player;
-      // El armario y la caja de fusibles los atiende main.js.
-      if (near(p, D.closet, 40) || near(p, D.fuse, 30)) return false;
-      let target = -1;
-      let best = SWITCH_REACH;
-      for (const s of state.power.switches[state.floor]) {
-        const d = Math.hypot(s.x - p.x, s.y - p.y);
-        // Solo interruptores a la vista: nada de encender a través de una pared.
-        if (d < best && !blockedLine(p.x, p.y, s.x, s.y, state.model.walls)) { best = d; target = s.room; }
-      }
-      if (target < 0) return false;
+      const sw = switchInReach(state);
+      if (!sw) return false;
+      const target = sw.room;
       if (e.repeat) return true;
       if (!state.power.on) {
         Umbra.tell('El interruptor no responde. Revisa los fusibles del garaje.');
@@ -129,6 +137,35 @@
         ctx.fillStyle = lit ? '#e1b66e' : '#6b6358';
         ctx.fillRect(Math.round(s.x) - 1, Math.round(s.y) - 1, 3, 3);
       }
+    },
+    // Indicación "E · Luz" y resalte del interruptor al alcance (sobre la capa de oscuridad).
+    drawUI(ctx, state) {
+      if (state.scene !== 'play' || (state.journal && state.journal.open)) return;
+      const sw = switchInReach(state);
+      if (!sw) return;
+      const { ox, oy } = state.view;
+      const sx = Math.round(sw.x + ox);
+      const sy = Math.round(sw.y + oy);
+      const lit = state.power.on && state.power.lamps[state.floor][sw.room];
+      ctx.save();
+      ctx.fillStyle = '#07090c';
+      ctx.fillRect(sx - 3, sy - 3, 7, 7);
+      ctx.fillStyle = '#e1b66e';
+      ctx.fillRect(sx - 2, sy - 2, 5, 5);
+      ctx.fillStyle = lit ? '#fff2c8' : '#6b6358';
+      ctx.fillRect(sx - 1, sy - 1, 3, 3);
+      const label = 'E · Luz';
+      ctx.font = '8px monospace';
+      const tw = Math.ceil(ctx.measureText(label).width) + 6;
+      const px = Math.round(state.player.x + ox - tw / 2);
+      // Del lado opuesto al interruptor, para no taparlo.
+      const py = Math.round(state.player.y + oy) + (sw.y < state.player.y ? 15 : -26);
+      ctx.fillStyle = 'rgba(7,9,12,0.8)';
+      ctx.fillRect(px, py, tw, 11);
+      ctx.fillStyle = '#e1b66e';
+      ctx.textAlign = 'left';
+      ctx.fillText(label, px + 3, py + 8);
+      ctx.restore();
     },
   });
 
