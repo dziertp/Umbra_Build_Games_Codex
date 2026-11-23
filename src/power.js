@@ -7,16 +7,6 @@
 
   const SWITCH_REACH = 26; // distancia para usar un interruptor desde el umbral
 
-  // Habitación más pequeña que contiene el punto (la despensa está dentro de la cocina).
-  function roomIndexAt(rooms, x, y) {
-    let best = -1;
-    for (let i = 0; i < rooms.length; i++) {
-      const [, rx, ry, rw, rh] = rooms[i];
-      if (x >= rx && x < rx + rw && y >= ry && y < ry + rh && (best < 0 || rw * rh < rooms[best][3] * rooms[best][4])) best = i;
-    }
-    return best;
-  }
-
   // Interruptor de cada habitación: en la pared, junto a una puerta, por dentro.
   function switchesFor(D) {
     return D.rooms.map((r, i) => {
@@ -86,7 +76,6 @@
         const d = Math.hypot(s.x - p.x, s.y - p.y);
         if (d < best) { best = d; target = s.room; }
       }
-      if (target < 0) target = roomIndexAt(D.rooms, p.x, p.y);
       if (target < 0) return false;
       if (e.repeat) return true;
       if (!state.power.on) {
