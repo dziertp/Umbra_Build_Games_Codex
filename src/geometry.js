@@ -25,11 +25,23 @@
     else walls.push([sx, sy + sh, sx + sw, sy + sh, 3]);
     return {
       walls,
-      rects: D.furniture.map((a) => a.slice(1)),
+      rects: D.furniture.map((a) => a.slice(1)).concat(baseRects(D)),
       circles: D.circles,
       floorData: D,
       floor,
     };
+  }
+  // Campamento exterior (D.base): camión, panel, pizarra y poste del farol tienen colisión.
+  function baseRects(D) {
+    const b = D.base;
+    if (!b) return [];
+    return [b.truck, b.board, b.objectives, b.lamp && b.lamp.pole].filter(Boolean);
+  }
+  // Fuera de la casa: un punto pisable que no está en ninguna habitación (porche, campamento, terraza).
+  function outdoors(floor, x, y) {
+    const D = floors[floor];
+    if (D.rooms.some((r) => x >= r[1] && x < r[1] + r[3] && y >= r[2] && y < r[2] + r[4])) return false;
+    return D.floors.some((b) => inside(x, y, b));
   }
   function blocked(x, y, r, m) {
     if (!m.floorData.floors.some((b) => inside(x, y, b))) return true;
@@ -356,6 +368,7 @@
     inside,
     model,
     blocked,
+    outdoors,
     move,
     grid,
     path,
