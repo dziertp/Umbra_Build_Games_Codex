@@ -98,7 +98,13 @@
   }
 
   const light = { on: true, poly: [] };
-  let torch = true; // linterna encendida en este fotograma (light.on salvo parpadeo de cacería)
+  let torch = false; // linterna encendida en este fotograma (light.on salvo parpadeo de cacería)
+
+  // La linterna solo funciona si va en el inventario (tools.js: state.tools.slots).
+  function hasFlashlight(state) {
+    const slots = state.tools && state.tools.slots;
+    return !!slots && slots.some((t) => t && t.id === 'flashlight');
+  }
 
   let dark = null; // capa de oscuridad
   let mask = null; // máscara auxiliar por nivel
@@ -226,7 +232,7 @@
   }
   light.playerInDarkness = function (state) {
     const flicker = state.entity && state.entity.flicker;
-    if (light.on && !(flicker && flicker.torch)) return false;
+    if (light.on && hasFlashlight(state) && !(flicker && flicker.torch)) return false;
     const p = state.player;
     const D = state.G.floors[state.floor];
     if (state.G.outdoors && state.G.outdoors(state.floor, p.x, p.y)) return false; // afuera hay luna
@@ -242,17 +248,24 @@
     return true;
   };
 
+  light.hasFlashlight = hasFlashlight;
   light.visibility = visibility; // expuesto para pruebas y para otros sistemas (p. ej. la entidad)
   Umbra.lighting = light;
 
   Umbra.register({
     order: 5,
     start() {
-      light.on = true;
+      light.on = false; // la linterna es un objeto: empieza apagada (y hay que llevarla)
     },
-    onKey(e) {
+    onKey(e, state) {
       if (e.code !== 'KeyL') return false;
-      if (!e.repeat) light.on = !light.on;
+      if (e.repeat) return true;
+      if (!hasFlashlight(state)) {
+        light.on = false;
+        Umbra.tell('No llevas linterna.', 2);
+      } else {
+        light.on = !light.on;
+      }
       return true;
     },
     update(dt, state) {
@@ -274,6 +287,7 @@
 
       // Parpadeo de lámparas y linterna antes y durante una cacería (lo decide entity.js).
       const flicker = state.entity && state.entity.flicker;
+      if (light.on && !hasFlashlight(state)) light.on = false; // la devolvió al panel: se apaga
       torch = light.on && !(flicker && flicker.torch);
       const poly = light.poly;
       const p = state.player;
