@@ -61,6 +61,12 @@
   ];
   // Aspecto de cada mueble según su nombre.
   const FURNITURE_STYLE = [
+    [/perchero/i, 'rack'],
+    [/lámpara/i, 'floorlamp'],
+    [/planta/i, 'plantpot'],
+    [/baúl/i, 'chest'],
+    [/bidón/i, 'drum'],
+    [/neumático/i, 'tires'],
     [/piano/i, 'piano'],
     [/reloj/i, 'clock'],
     [/caja/i, 'box'],
@@ -294,6 +300,71 @@
       g.fillRect(x + 3, y + 3, w - 6, h - 6);
     } else if (style === 'counter') {
       box(g, x, y, w, h, C.counter, C.counterTop);
+    } else if (style === 'rack') {
+      // Perchero: base redonda, poste y ganchos con un abrigo.
+      const cx = x + Math.floor(w / 2), cy = y + Math.floor(h / 2);
+      g.fillStyle = C.shadow;
+      g.fillRect(x + 2, y + 2, w - 2, h - 2);
+      g.fillStyle = C.edge;
+      g.fillRect(x + 1, y + 1, w - 2, h - 2);
+      g.fillStyle = C.furn;
+      g.fillRect(x + 2, y + 2, w - 4, h - 4);
+      g.fillStyle = C.furnTop;
+      g.fillRect(cx - 1, cy - 1, 2, 2);
+      g.fillStyle = C.blanket;
+      g.fillRect(cx - 4, cy - 2, 3, 5);
+    } else if (style === 'floorlamp') {
+      // Lámpara de pie: pantalla redonda (cálida apagada) vista desde arriba.
+      g.fillStyle = C.shadow;
+      g.fillRect(x + 2, y + 2, w - 2, h - 2);
+      g.fillStyle = C.edge;
+      g.fillRect(x + 1, y, w - 2, h);
+      g.fillRect(x, y + 1, w, h - 2);
+      g.fillStyle = C.tape;
+      g.fillRect(x + 2, y + 1, w - 4, h - 2);
+      g.fillRect(x + 1, y + 2, w - 2, h - 4);
+      g.fillStyle = C.pot;
+      g.fillRect(x + Math.floor(w / 2) - 1, y + Math.floor(h / 2) - 1, 2, 2);
+    } else if (style === 'plantpot') {
+      // Planta seca en maceta grande.
+      g.fillStyle = C.shadow;
+      g.fillRect(x + 2, y + 2, w - 2, h - 2);
+      g.fillStyle = C.edge;
+      g.fillRect(x + 1, y + 1, w - 2, h - 2);
+      g.fillStyle = C.pot;
+      g.fillRect(x + 2, y + 2, w - 4, h - 4);
+      g.fillStyle = C.leaf;
+      g.fillRect(x + 3, y + 3, 2, 2);
+      g.fillRect(x + w - 5, y + 4, 2, 2);
+      g.fillRect(x + Math.floor(w / 2) - 1, y + 1, 2, 3);
+      g.fillStyle = C.leafDry;
+      g.fillRect(x + 4, y + h - 5, 2, 2);
+      g.fillRect(x + w - 6, y + h - 4, 2, 1);
+    } else if (style === 'chest') {
+      box(g, x, y, w, h, C.furn, C.furnTop);
+      g.fillStyle = C.pole;
+      g.fillRect(x + 4, y + 1, 2, h - 2);
+      g.fillRect(x + w - 6, y + 1, 2, h - 2);
+      g.fillStyle = C.lampHead;
+      g.fillRect(x + Math.floor(w / 2) - 1, y + h - 4, 2, 2);
+    } else if (style === 'drum') {
+      box(g, x, y, w, h, '#33402f', '#3e4c39');
+      g.fillStyle = C.edge;
+      g.fillRect(x + 1, y + Math.floor(h / 3), w - 2, 1);
+      g.fillRect(x + 1, y + Math.floor((2 * h) / 3), w - 2, 1);
+    } else if (style === 'tires') {
+      // Pila de neumáticos: dos aros oscuros.
+      const r = Math.floor(Math.min(w, h) / 2) - 1;
+      for (const [cx, cy] of [[x + r + 1, y + r + 1], [x + w - r - 2, y + h - r - 2]]) {
+        g.fillStyle = C.wheel;
+        g.beginPath();
+        g.arc(cx, cy, r, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = C.concrete;
+        g.beginPath();
+        g.arc(cx, cy, Math.max(2, r - 5), 0, Math.PI * 2);
+        g.fill();
+      }
     } else if (style === 'piano') {
       box(g, x, y, w, h, C.piano, C.pianoTop);
       const ky = y + h - 7;
